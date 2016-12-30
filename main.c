@@ -48,20 +48,21 @@ ScmObj read_proc;
 
 void echo_read(uv_stream_t *client, ssize_t nread, const uv_buf_t *buf) {
   if (nread > 0) {
-    write_req_t *req = (write_req_t*) malloc(sizeof(write_req_t));
-    req->buf = uv_buf_init(buf->base, nread);
-    uv_write((uv_write_t*) req, client, &req->buf, 1, echo_write);
+    /* write_req_t *req = (write_req_t*) malloc(sizeof(write_req_t)); */
+    /* req->buf = uv_buf_init(buf->base, nread); */
+    /* uv_write((uv_write_t*) req, client, &req->buf, 1, echo_write); */
+
+    ScmEvalPacket epak;
+    if (Scm_Apply(read_proc, SCM_LIST1(Scm_MakeString(buf->base, nread, -1, 0)), &epak) < 0) {
+      error_exit(epak.exception);
+    }
+
     return;
   }
   if (nread < 0) {
     if (nread != UV_EOF)
       fprintf(stderr, "Read error %s\n", uv_err_name(nread));
     uv_close((uv_handle_t*) client, NULL);
-  }
-
-  ScmEvalPacket epak;
-  if (Scm_Apply(read_proc, SCM_NIL, &epak) < 0) {
-    error_exit(epak.exception);
   }
 
   free(buf->base);
