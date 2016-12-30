@@ -26,12 +26,12 @@ void free_write_req(uv_write_t *req) {
   free(wr);
 }
 
-void echo_write(uv_write_t *req, int status) {
-  if (status) {
-    fprintf(stderr, "Write error %s\n", uv_strerror(status));
-  }
-  free_write_req(req);
-}
+/* void echo_write(uv_write_t *req, int status) { */
+/*   if (status) { */
+/*     fprintf(stderr, "Write error %s\n", uv_strerror(status)); */
+/*   } */
+/*   free_write_req(req); */
+/* } */
 
 void error_exit(ScmObj c)
 {
