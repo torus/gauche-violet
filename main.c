@@ -26,12 +26,13 @@ void free_write_req(uv_write_t *req) {
   free(wr);
 }
 
-/* void echo_write(uv_write_t *req, int status) { */
-/*   if (status) { */
-/*     fprintf(stderr, "Write error %s\n", uv_strerror(status)); */
-/*   } */
-/*   free_write_req(req); */
-/* } */
+void echo_write(uv_write_t *req, int status) {
+  if (status) {
+    fprintf(stderr, "Write error %s\n", uv_strerror(status));
+  }
+  printf("echo_write: %p\n", req);
+  free_write_req(req);
+}
 
 void error_exit(ScmObj c)
 {
@@ -53,7 +54,8 @@ void echo_read(uv_stream_t *client, ssize_t nread, const uv_buf_t *buf) {
     /* uv_write((uv_write_t*) req, client, &req->buf, 1, echo_write); */
 
     ScmEvalPacket epak;
-    if (Scm_Apply(read_proc, SCM_LIST1(Scm_MakeString(buf->base, nread, -1, 0)), &epak) < 0) {
+    if (Scm_Apply(read_proc, SCM_LIST2(SCM_MAKE_INT(client),
+                                       Scm_MakeString(buf->base, nread, -1, 0)), &epak) < 0) {
       error_exit(epak.exception);
     }
 
@@ -91,9 +93,34 @@ void on_new_connection(uv_stream_t *server, int status) {
     uv_close((uv_handle_t*) client, NULL);
   }
 
+  printf("%p\n", client);
+
   ScmEvalPacket epak;
   if (Scm_Apply(new_conn_proc, SCM_NIL, &epak) < 0) {
     error_exit(epak.exception);
+  }
+}
+
+ScmObj dequeue_response_proc;
+
+void handle_response(uv_idle_t* handle) {
+  ScmEvalPacket epak;
+  if (Scm_Apply(dequeue_response_proc, SCM_NIL, &epak) < 0) {
+    error_exit(epak.exception);
+  }
+  ScmObj result = epak.results[0];
+  if (SCM_PAIRP(result)) {
+    uv_stream_t *client = (uv_stream_t*)SCM_INT_VALUE(SCM_CAR(result));
+
+    const ScmStringBody* body = SCM_STRING_BODY(SCM_CDR(result));
+
+    write_req_t *req = (write_req_t*) malloc(sizeof(write_req_t));
+    char *string = (char*)malloc(SCM_STRING_BODY_SIZE(body));
+    memcpy(string, SCM_STRING_BODY_START(body), SCM_STRING_BODY_SIZE(body));
+    req->buf = uv_buf_init(string, SCM_STRING_BODY_SIZE(body));
+    printf("handle_response: %p\n", req);
+    uv_write((uv_write_t*) req, client, &req->buf, 1, echo_write);
+
   }
 }
 
@@ -121,7 +148,16 @@ int main() {
                                     SCM_SYMBOL(SCM_INTERN("on-read")),
                                     SCM_BINDING_STAY_IN_MODULE);
 
+  dequeue_response_proc = Scm_GlobalVariableRef(Scm_CurrentModule(),
+                                                SCM_SYMBOL(SCM_INTERN("dequeue-response!")),
+                                                SCM_BINDING_STAY_IN_MODULE);
+
   loop = uv_default_loop();
+
+  uv_idle_t idler;
+
+  uv_idle_init(uv_default_loop(), &idler);
+  uv_idle_start(&idler, handle_response);
 
   uv_tcp_t server;
   uv_tcp_init(loop, &server);

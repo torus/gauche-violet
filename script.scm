@@ -1,14 +1,21 @@
 (use rfc.uri)
 (use rfc.822)
+(use util.queue)
 
 (define (hello)
   (print "hello from script file!"))
 
+(define *response-queue* (make-queue))
+
+(define (dequeue-response!)
+  (dequeue! *response-queue* #f)
+  )
+
 (define (on-new-connection)
   (print "new connection!"))
 
-(define (on-read buf)
-  (print buf)
+(define (on-read client buf)
+  (print client)
 
   (let* ([iport (open-input-string buf)]
          [line (read-line iport)])
@@ -25,6 +32,8 @@
                    #;[req (make-request line csock meth host path #f query hdrs)])
               (print path)
               (print hdrs)
+              (let1 content "HTTP/1.1 200 OK\nContent-Type: text/html\n\nhello\n"
+                (enqueue! *response-queue* (cons client content)))
               #;(unwind-protect
                (match (find-handler path req app)
                  [(handler req) (handler req app)]
