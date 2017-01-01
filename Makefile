@@ -2,7 +2,7 @@ TARGET=violet
 GAUCHEDIR=../Gauche
 GAUCHELIBDIR=../Gauche/src
 CFLAGS=-I$(GAUCHEDIR)/src -I$(GAUCHEDIR)/gc/include
-LFLAGS=-L/usr/local/lib -luv -L$(GAUCHELIBDIR) -lgauche-0.9
+LFLAGS=-L/usr/local/lib -luv -L$(GAUCHELIBDIR) -lgauche-0.9 -lcurl-gnutls
 
 build: $(TARGET)
 
