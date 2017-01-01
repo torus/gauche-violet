@@ -39,4 +39,5 @@
   (print "respond-hello running")
   (let1 content #`"HTTP/1.1 200 OK\nContent-Type: text/html\n\nhello ,client ,path\n"
         (enqueue! *response-queue* (cons client content))
-        (enqueue! *response-queue* (cons client 'eof))))
+        (enqueue! *response-queue* (cons client 'eof))
+        (enqueue! *response-queue* (cons client 'get-url))))

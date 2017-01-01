@@ -24,6 +24,11 @@ typedef struct curl_context_s {
 
 size_t download_callback(char *ptr, size_t size, size_t nmemb, void *userdata) {
   printf("download_callback: %p, %ld, %ld, %p\n", ptr, size, nmemb, userdata);
+  char *buf = (char*)malloc(size * nmemb + 1);
+  strncpy(buf, ptr, size * nmemb);
+  buf[size * nmemb] = '\0';
+  printf("%s\n", buf);
+  free(buf);
   return CURLE_OK;
 }
 
@@ -227,9 +232,13 @@ void handle_response(uv_idle_t* handle) {
         printf("handle_response: %p\n", req);
         uv_write((uv_write_t*) req, client, &req->buf, 1, echo_write);
       } else if (SCM_SYMBOLP(cdr)) {
-        if (!strcmp("eof", SCM_STRING_BODY_START(SCM_STRING_BODY(SCM_SYMBOL_NAME(cdr))))) {
+        const char *sym = SCM_STRING_BODY_START(SCM_STRING_BODY(SCM_SYMBOL_NAME(cdr)));
+        if (!strcmp("eof", sym)) {
           printf("handle_response: closing %p\n", client);
           uv_close((uv_handle_t*)client, NULL);
+        } else if (!strcmp("get-url", sym)) {
+          // temptemp...
+          add_download("http://numbersapi.com/random/math?json", 1);
         }
       }
     } else {
@@ -312,8 +321,6 @@ int main() {
   curl_handle = curl_multi_init();
   curl_multi_setopt(curl_handle, CURLMOPT_SOCKETFUNCTION, handle_socket);
   curl_multi_setopt(curl_handle, CURLMOPT_TIMERFUNCTION, start_timeout);
-
-  add_download("http://numbersapi.com/random/math?json", 1);
 
   // Main loop
   uv_idle_t idler;
