@@ -33,7 +33,8 @@
               (print path)
               (print hdrs)
               (let1 content #`"HTTP/1.1 200 OK\nContent-Type: text/html\n\nhello ,client\n"
-                (enqueue! *response-queue* (cons client content)))
+                    (enqueue! *response-queue* (cons client content))
+                    (enqueue! *response-queue* (cons client 'eof)))
               #;(unwind-protect
                (match (find-handler path req app)
                  [(handler req) (handler req app)]
