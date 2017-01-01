@@ -107,16 +107,16 @@ void handle_response(uv_idle_t* handle) {
   ScmObj result = epak.results[0];
   if (SCM_PAIRP(result)) {
     uv_stream_t *client = (uv_stream_t*)SCM_INT_VALUE(SCM_CAR(result));
-
-    const ScmStringBody* body = SCM_STRING_BODY(SCM_CDR(result));
-
-    write_req_t *req = (write_req_t*) malloc(sizeof(write_req_t));
-    char *string = (char*)malloc(SCM_STRING_BODY_SIZE(body));
-    memcpy(string, SCM_STRING_BODY_START(body), SCM_STRING_BODY_SIZE(body));
-    req->buf = uv_buf_init(string, SCM_STRING_BODY_SIZE(body));
-    printf("handle_response: %p\n", req);
-    uv_write((uv_write_t*) req, client, &req->buf, 1, echo_write);
-
+    ScmObj cdr = SCM_CDR(result);
+    if (SCM_STRINGP(cdr)) {
+      const ScmStringBody* body = SCM_STRING_BODY(cdr);
+      write_req_t *req = (write_req_t*) malloc(sizeof(write_req_t));
+      char *string = (char*)malloc(SCM_STRING_BODY_SIZE(body));
+      memcpy(string, SCM_STRING_BODY_START(body), SCM_STRING_BODY_SIZE(body));
+      req->buf = uv_buf_init(string, SCM_STRING_BODY_SIZE(body));
+      printf("handle_response: %p\n", req);
+      uv_write((uv_write_t*) req, client, &req->buf, 1, echo_write);
+    }
   }
 }
 

@@ -32,7 +32,7 @@
                    #;[req (make-request line csock meth host path #f query hdrs)])
               (print path)
               (print hdrs)
-              (let1 content "HTTP/1.1 200 OK\nContent-Type: text/html\n\nhello\n"
+              (let1 content #`"HTTP/1.1 200 OK\nContent-Type: text/html\n\nhello ,client\n"
                 (enqueue! *response-queue* (cons client content)))
               #;(unwind-protect
                (match (find-handler path req app)

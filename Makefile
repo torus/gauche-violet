@@ -7,7 +7,7 @@ LFLAGS=-L/usr/local/lib -luv -L$(GAUCHELIBDIR) -lgauche-0.9
 build: $(TARGET)
 
 run: $(TARGET)
-	./$(TARGET)
+	LD_LIBRARY_PATH=$(GAUCHELIBDIR) ./$(TARGET)
 
 $(TARGET): main.c
 	$(CC) -g -I/usr/local/include -o $(TARGET) main.c $(CFLAGS) $(LFLAGS)
