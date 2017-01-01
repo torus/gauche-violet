@@ -1,11 +1,14 @@
 (use rfc.uri)
 (use rfc.822)
 (use util.queue)
+(use control.thread-pool)
 
 (define (hello)
   (print "hello from script file!"))
 
 (define *response-queue* (make-queue))
+
+(define *thread-pool* (make-thread-pool 8))
 
 (define (dequeue-response!)
   (dequeue! *response-queue* #f)
@@ -30,9 +33,15 @@
                    )
               (print path)
               (print hdrs)
-              (let1 content #`"HTTP/1.1 200 OK\nContent-Type: text/html\n\nhello ,client\n"
-                    (enqueue! *response-queue* (cons client content))
-                    (enqueue! *response-queue* (cons client 'eof)))
+              (add-job! *thread-pool*
+                        (respond-hello client path hdrs))
               ))]
       ))
+  )
+
+(define (respond-hello client path headers)
+  (lambda ()
+    (let1 content #`"HTTP/1.1 200 OK\nContent-Type: text/html\n\nhello ,client ,path\n"
+          (enqueue! *response-queue* (cons client content))
+          (enqueue! *response-queue* (cons client 'eof))))
   )
