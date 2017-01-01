@@ -1,4 +1,4 @@
-TARGET=tcp-echo-server
+TARGET=violet
 GAUCHEDIR=../Gauche
 GAUCHELIBDIR=../Gauche/src
 CFLAGS=-I$(GAUCHEDIR)/src -I$(GAUCHEDIR)/gc/include

@@ -32,6 +32,7 @@ void echo_write(uv_write_t *req, int status) {
   }
   printf("echo_write: %p\n", req);
   free_write_req(req);
+  printf("echo_write: freed\n");
 }
 
 void error_exit(ScmObj c)
@@ -100,28 +101,32 @@ void on_new_connection(uv_stream_t *server, int status) {
 ScmObj dequeue_response_proc;
 
 void handle_response(uv_idle_t* handle) {
-  ScmEvalPacket epak;
-  if (Scm_Apply(dequeue_response_proc, SCM_NIL, &epak) < 0) {
-    error_exit(epak.exception);
-  }
-  ScmObj result = epak.results[0];
-  if (SCM_PAIRP(result)) {
-    uv_stream_t *client = (uv_stream_t*)SCM_INT_VALUE(SCM_CAR(result));
+  while (1) {
+    ScmEvalPacket epak;
+    if (Scm_Apply(dequeue_response_proc, SCM_NIL, &epak) < 0) {
+      error_exit(epak.exception);
+    }
+    ScmObj result = epak.results[0];
+    if (SCM_PAIRP(result)) {
+      uv_stream_t *client = (uv_stream_t*)SCM_INT_VALUE(SCM_CAR(result));
 
-    ScmObj cdr = SCM_CDR(result);
-    if (SCM_STRINGP(cdr)) {
-      const ScmStringBody* body = SCM_STRING_BODY(cdr);
-      write_req_t *req = (write_req_t*) malloc(sizeof(write_req_t));
-      char *string = (char*)malloc(SCM_STRING_BODY_SIZE(body));
-      memcpy(string, SCM_STRING_BODY_START(body), SCM_STRING_BODY_SIZE(body));
-      req->buf = uv_buf_init(string, SCM_STRING_BODY_SIZE(body));
-      printf("handle_response: %p\n", req);
-      uv_write((uv_write_t*) req, client, &req->buf, 1, echo_write);
-    } else if (SCM_SYMBOLP(cdr)) {
-      if (!strcmp("eof", SCM_STRING_BODY_START(SCM_STRING_BODY(SCM_SYMBOL_NAME(cdr))))) {
-        printf("handle_response: closing %p\n", client);
-        uv_close((uv_handle_t*)client, NULL);
+      ScmObj cdr = SCM_CDR(result);
+      if (SCM_STRINGP(cdr)) {
+        const ScmStringBody* body = SCM_STRING_BODY(cdr);
+        write_req_t *req = (write_req_t*) malloc(sizeof(write_req_t));
+        char *string = (char*)malloc(SCM_STRING_BODY_SIZE(body));
+        memcpy(string, SCM_STRING_BODY_START(body), SCM_STRING_BODY_SIZE(body));
+        req->buf = uv_buf_init(string, SCM_STRING_BODY_SIZE(body));
+        printf("handle_response: %p\n", req);
+        uv_write((uv_write_t*) req, client, &req->buf, 1, echo_write);
+      } else if (SCM_SYMBOLP(cdr)) {
+        if (!strcmp("eof", SCM_STRING_BODY_START(SCM_STRING_BODY(SCM_SYMBOL_NAME(cdr))))) {
+          printf("handle_response: closing %p\n", client);
+          uv_close((uv_handle_t*)client, NULL);
+        }
       }
+    } else {
+      return;
     }
   }
 }
