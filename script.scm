@@ -38,6 +38,6 @@
 (define (respond-hello client path headers)
   (print "respond-hello running")
   (let1 content #`"HTTP/1.1 200 OK\nContent-Type: text/html\n\nhello ,client ,path\n"
-        (enqueue! *response-queue* (cons client content))
-        (enqueue! *response-queue* (cons client 'eof))
-        (enqueue! *response-queue* (cons client 'get-url))))
+        (enqueue! *response-queue* (list 1 'res  client content))
+        (enqueue! *response-queue* (list 2 'close client))
+        (enqueue! *response-queue* (list 3 'get "http://numbersapi.com/random/math?json"))))

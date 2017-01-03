@@ -220,26 +220,35 @@ void handle_response(uv_idle_t* handle) {
     }
     ScmObj result = epak.results[0];
     if (SCM_PAIRP(result)) {
-      uv_stream_t *client = (uv_stream_t*)SCM_INT_VALUE(SCM_CAR(result));
+      // (id 'res client "response")
+      // (id 'close client)
+      // (id 'get "url")
+      int id = SCM_INT_VALUE(SCM_CAR(result));
+      const char *tag = SCM_STRING_BODY_START(SCM_STRING_BODY(SCM_SYMBOL_NAME(SCM_CADR(result))));
+      ScmObj body = SCM_CDDR(result);
 
-      ScmObj cdr = SCM_CDR(result);
-      if (SCM_STRINGP(cdr)) {
-        const ScmStringBody* body = SCM_STRING_BODY(cdr);
+      printf("handle_response: % 8d: %s\n", id, tag);
+
+      if (!strcmp("res", tag)) {
+        uv_stream_t *client = (uv_stream_t*)SCM_INT_VALUE(SCM_CAR(body));
+        const ScmStringBody* content = SCM_STRING_BODY(SCM_CADR(body));
+
         write_req_t *req = (write_req_t*) malloc(sizeof(write_req_t));
-        char *string = (char*)malloc(SCM_STRING_BODY_SIZE(body));
-        memcpy(string, SCM_STRING_BODY_START(body), SCM_STRING_BODY_SIZE(body));
-        req->buf = uv_buf_init(string, SCM_STRING_BODY_SIZE(body));
+        char *string = (char*)malloc(SCM_STRING_BODY_SIZE(content));
+        memcpy(string, SCM_STRING_BODY_START(content), SCM_STRING_BODY_SIZE(content));
+        req->buf = uv_buf_init(string, SCM_STRING_BODY_SIZE(content));
         printf("handle_response: %p\n", req);
         uv_write((uv_write_t*) req, client, &req->buf, 1, echo_write);
-      } else if (SCM_SYMBOLP(cdr)) {
-        const char *sym = SCM_STRING_BODY_START(SCM_STRING_BODY(SCM_SYMBOL_NAME(cdr)));
-        if (!strcmp("eof", sym)) {
-          printf("handle_response: closing %p\n", client);
-          uv_close((uv_handle_t*)client, NULL);
-        } else if (!strcmp("get-url", sym)) {
-          // temptemp...
-          add_download("http://numbersapi.com/random/math?json", 1);
-        }
+      } else if (!strcmp("close", tag)) {
+        uv_stream_t *client = (uv_stream_t*)SCM_INT_VALUE(SCM_CAR(body));
+        printf("handle_response: closing %p\n", client);
+        uv_close((uv_handle_t*)client, NULL);
+      } else if (!strcmp("get", tag)) {
+        const ScmStringBody* content = SCM_STRING_BODY(SCM_CAR(body));
+        char *url = (char*)malloc(SCM_STRING_BODY_SIZE(content));
+        memcpy(url, SCM_STRING_BODY_START(content), SCM_STRING_BODY_SIZE(content));
+        add_download(url, 1);
+        // needs free
       }
     } else {
       return;
