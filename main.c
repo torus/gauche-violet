@@ -22,12 +22,33 @@ typedef struct curl_context_s {
     curl_socket_t sockfd;
 } curl_context_t;
 
+ScmObj result_proc;
+
+void error_exit(ScmObj c)
+{
+    ScmObj m = Scm_ConditionMessage(c);
+    if (SCM_FALSEP(m)) {
+        Scm_Printf(SCM_CURERR, "gosh: Thrown unknown condition: %S\n", c);
+    } else {
+        Scm_Printf(SCM_CURERR, "gosh: %S: %A\n", Scm_ConditionTypeName(c), m);
+    }
+    Scm_Exit(1);
+}
+
 size_t download_callback(char *ptr, size_t size, size_t nmemb, void *userdata) {
+  int id = (int)userdata;
   printf("download_callback: %p, %ld, %ld, %p\n", ptr, size, nmemb, userdata);
   char *buf = (char*)malloc(size * nmemb + 1);
   strncpy(buf, ptr, size * nmemb);
   buf[size * nmemb] = '\0';
-  printf("%s\n", buf);
+  /* printf("%s\n", buf); */
+
+  ScmEvalPacket epak;
+  if (Scm_Apply(result_proc, SCM_LIST2(SCM_MAKE_INT(id),
+                                       Scm_MakeString(buf, size * nmemb, -1, 0)), &epak) < 0) {
+    error_exit(epak.exception);
+  }
+
   free(buf);
   return CURLE_OK;
 }
@@ -56,7 +77,7 @@ void destroy_curl_context(curl_context_t *context) {
 }
 
 
-void add_download(const char *url, int num) {
+void add_download(const char *url, int id) {
     /* char filename[50]; */
     /* sprintf(filename, "%d.download", num); */
     /* FILE *file; */
@@ -69,6 +90,7 @@ void add_download(const char *url, int num) {
 
     CURL *handle = curl_easy_init();
     curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, download_callback);
+    curl_easy_setopt(handle, CURLOPT_WRITEDATA, (void*)id);
     curl_easy_setopt(handle, CURLOPT_URL, url);
     curl_multi_add_handle(curl_handle, handle);
     fprintf(stderr, "Added download %s\n", url);
@@ -145,17 +167,6 @@ void echo_write(uv_write_t *req, int status) {
   printf("echo_write: %p\n", req);
   free_write_req(req);
   printf("echo_write: freed\n");
-}
-
-void error_exit(ScmObj c)
-{
-    ScmObj m = Scm_ConditionMessage(c);
-    if (SCM_FALSEP(m)) {
-        Scm_Printf(SCM_CURERR, "gosh: Thrown unknown condition: %S\n", c);
-    } else {
-        Scm_Printf(SCM_CURERR, "gosh: %S: %A\n", Scm_ConditionTypeName(c), m);
-    }
-    Scm_Exit(1);
 }
 
 ScmObj read_proc;
@@ -245,9 +256,10 @@ void handle_response(uv_idle_t* handle) {
         uv_close((uv_handle_t*)client, NULL);
       } else if (!strcmp("get", tag)) {
         const ScmStringBody* content = SCM_STRING_BODY(SCM_CAR(body));
-        char *url = (char*)malloc(SCM_STRING_BODY_SIZE(content));
+        char *url = (char*)malloc(SCM_STRING_BODY_SIZE(content) + 1);
+        url[SCM_STRING_BODY_SIZE(content)] = '\0';
         memcpy(url, SCM_STRING_BODY_START(content), SCM_STRING_BODY_SIZE(content));
-        add_download(url, 1);
+        add_download(url, id);
         // needs free
       }
     } else {
@@ -319,6 +331,10 @@ int main() {
   dequeue_response_proc = Scm_GlobalVariableRef(Scm_CurrentModule(),
                                                 SCM_SYMBOL(SCM_INTERN("dequeue-response!")),
                                                 SCM_BINDING_STAY_IN_MODULE);
+
+  result_proc = Scm_GlobalVariableRef(Scm_CurrentModule(),
+                                      SCM_SYMBOL(SCM_INTERN("on-result")),
+                                      SCM_BINDING_STAY_IN_MODULE);
 
   // Curl
   if (curl_global_init(CURL_GLOBAL_ALL)) {

@@ -6,10 +6,18 @@
   (print "hello from script file!"))
 
 (define *response-queue* (make-queue))
+(define *request-map* (make-tree-map))
 
 (define (dequeue-response!)
   (dequeue! *response-queue* #f)
   )
+
+(define (on-result id . content)
+  (print #`"on-result ,id")
+  (let ((proc (tree-map-get *request-map* id #f)))
+    (when proc
+          (tree-map-delete! *request-map* id)
+          (apply proc content))))
 
 (define (on-new-connection)
   (print "new connection!"))
@@ -37,7 +45,14 @@
 
 (define (respond-hello client path headers)
   (print "respond-hello running")
-  (let1 content #`"HTTP/1.1 200 OK\nContent-Type: text/html\n\nhello ,client ,path\n"
-        (enqueue! *response-queue* (list 1 'res  client content))
-        (enqueue! *response-queue* (list 2 'close client))
-        (enqueue! *response-queue* (list 3 'get "http://numbersapi.com/random/math?json"))))
+  (tree-map-put! *request-map* 1
+                 (lambda (result)
+                   (print "got response:")
+                   (print result)
+                   (enqueue! *response-queue* (list 2 'res client
+                                                    "HTTP/1.1 200 OK\nContent-Type: application/json\n\n"))
+                   (enqueue! *response-queue* (list 3 'res client result))
+                   (enqueue! *response-queue* (list 4 'close client))
+                   ))
+  (enqueue! *response-queue* (list 1 'get "http://numbersapi.com/random/math?json"))
+  )
