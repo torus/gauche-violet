@@ -43,16 +43,24 @@
       ))
   )
 
+(define *task-id* 0)
+(define (push-task! task)
+  (inc! *task-id*)
+  (enqueue! *response-queue* (cons *task-id* task)))
+
+(define (push-task/ret! task proc)
+  (push-task! task)
+  (tree-map-put! *request-map* *task-id* proc))
+
 (define (respond-hello client path headers)
   (print "respond-hello running")
-  (tree-map-put! *request-map* 1
-                 (lambda (result)
-                   (print "got response:")
-                   (print result)
-                   (enqueue! *response-queue* (list 2 'res client
-                                                    "HTTP/1.1 200 OK\nContent-Type: application/json\n\n"))
-                   (enqueue! *response-queue* (list 3 'res client result))
-                   (enqueue! *response-queue* (list 4 'close client))
-                   ))
-  (enqueue! *response-queue* (list 1 'get "http://numbersapi.com/random/math?json"))
-  )
+
+  (push-task/ret! (list 'get "http://numbersapi.com/random/math?json")
+                  (lambda (result)
+                    (print "got response:")
+                    (print result)
+                    (push-task! (list 'res client
+                                      "HTTP/1.1 200 OK\nContent-Type: application/json\n\n"))
+                    (push-task! (list 'res client result))
+                    (push-task! (list 'close client))
+                    )))
