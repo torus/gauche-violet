@@ -2,7 +2,7 @@
 (use rfc.822)
 (use data.queue)
 
-(define (hello)
+(define (init)
   (print "hello from script file!"))
 
 (define *response-queue* (make-queue))

@@ -22,7 +22,7 @@ typedef struct curl_context_s {
     curl_socket_t sockfd;
 } curl_context_t;
 
-ScmObj result_proc;
+ScmObj result_proc = SCM_UNDEFINED;
 
 void error_exit(ScmObj c)
 {
@@ -45,11 +45,12 @@ size_t download_callback(char *ptr, size_t size, size_t nmemb, void *userdata) {
 
   ScmEvalPacket epak;
   if (Scm_Apply(result_proc, SCM_LIST2(SCM_MAKE_INT(id),
-                                       Scm_MakeString(buf, size * nmemb, -1, 0)), &epak) < 0) {
+                                       Scm_MakeString(buf, size * nmemb, -1, SCM_STRING_COPYING)),
+                &epak) < 0) {
     error_exit(epak.exception);
   }
 
-  //  free(buf);
+  free(buf);
   return CURLE_OK;
 }
 
@@ -169,7 +170,7 @@ void echo_write(uv_write_t *req, int status) {
   printf("echo_write: freed\n");
 }
 
-ScmObj read_proc;
+ScmObj read_proc = SCM_UNDEFINED;
 
 void echo_read(uv_stream_t *client, ssize_t nread, const uv_buf_t *buf) {
   if (nread > 0) {
@@ -195,7 +196,7 @@ void alloc_buffer(uv_handle_t *handle, size_t suggested_size, uv_buf_t *buf) {
   buf->len = suggested_size;
 }
 
-ScmObj new_conn_proc;
+ScmObj new_conn_proc = SCM_UNDEFINED;
 
 void on_new_connection(uv_stream_t *server, int status) {
   if (status < 0) {
@@ -221,7 +222,7 @@ void on_new_connection(uv_stream_t *server, int status) {
   }
 }
 
-ScmObj dequeue_response_proc;
+ScmObj dequeue_response_proc = SCM_UNDEFINED;
 
 void handle_response(uv_idle_t* handle) {
   while (1) {
@@ -314,29 +315,18 @@ int main() {
     error_exit(lpak.exception);
   }
 
-  ScmObj hello_proc = Scm_GlobalVariableRef(Scm_CurrentModule(),
-                                            SCM_SYMBOL(SCM_INTERN("hello")),
-                                            SCM_BINDING_STAY_IN_MODULE);
+  ScmObj init_proc = SCM_UNDEFINED;
+
+  SCM_BIND_PROC(init_proc,             "init",              Scm_CurrentModule());
+  SCM_BIND_PROC(new_conn_proc,         "on-new-connection", Scm_CurrentModule());
+  SCM_BIND_PROC(read_proc,             "on-read",           Scm_CurrentModule());
+  SCM_BIND_PROC(dequeue_response_proc, "dequeue-response!", Scm_CurrentModule());
+  SCM_BIND_PROC(result_proc,           "on-result",         Scm_CurrentModule());
+
   ScmEvalPacket epak;
-  if (Scm_Apply(hello_proc, SCM_NIL, &epak) < 0) {
+  if (Scm_Apply(init_proc, SCM_NIL, &epak) < 0) {
     error_exit(epak.exception);
   }
-
-  new_conn_proc = Scm_GlobalVariableRef(Scm_CurrentModule(),
-                                        SCM_SYMBOL(SCM_INTERN("on-new-connection")),
-                                        SCM_BINDING_STAY_IN_MODULE);
-
-  read_proc = Scm_GlobalVariableRef(Scm_CurrentModule(),
-                                    SCM_SYMBOL(SCM_INTERN("on-read")),
-                                    SCM_BINDING_STAY_IN_MODULE);
-
-  dequeue_response_proc = Scm_GlobalVariableRef(Scm_CurrentModule(),
-                                                SCM_SYMBOL(SCM_INTERN("dequeue-response!")),
-                                                SCM_BINDING_STAY_IN_MODULE);
-
-  result_proc = Scm_GlobalVariableRef(Scm_CurrentModule(),
-                                      SCM_SYMBOL(SCM_INTERN("on-result")),
-                                      SCM_BINDING_STAY_IN_MODULE);
 
   // Curl
   if (curl_global_init(CURL_GLOBAL_ALL)) {
