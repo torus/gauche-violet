@@ -55,12 +55,11 @@
 (define (respond-hello client path headers)
   (print "respond-hello running")
 
-  (push-task/ret! (list 'get "http://numbersapi.com/random/math?json")
+  (push-task/ret! '(get "http://numbersapi.com/random/math?json")
                   (lambda (result)
-                    (print "got response:")
-                    (print result)
-                    (push-task! (list 'res client
+                    ;; (print result)
+                    (push-task! `(res ,client
                                       "HTTP/1.1 200 OK\nContent-Type: application/json\n\n"))
-                    (push-task! (list 'res client result))
-                    (push-task! (list 'close client))
+                    (push-task! `(res ,client ,result))
+                    (push-task! `(close ,client))
                     )))

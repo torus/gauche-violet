@@ -49,7 +49,7 @@ size_t download_callback(char *ptr, size_t size, size_t nmemb, void *userdata) {
     error_exit(epak.exception);
   }
 
-  free(buf);
+  //  free(buf);
   return CURLE_OK;
 }
 
@@ -245,10 +245,12 @@ void handle_response(uv_idle_t* handle) {
         const ScmStringBody* content = SCM_STRING_BODY(SCM_CADR(body));
 
         write_req_t *req = (write_req_t*) malloc(sizeof(write_req_t));
-        char *string = (char*)malloc(SCM_STRING_BODY_SIZE(content));
-        memcpy(string, SCM_STRING_BODY_START(content), SCM_STRING_BODY_SIZE(content));
-        req->buf = uv_buf_init(string, SCM_STRING_BODY_SIZE(content));
-        printf("handle_response: %p\n", req);
+        int size = SCM_STRING_BODY_SIZE(content);
+        char *string = (char*)malloc(size + 1);
+        memcpy(string, SCM_STRING_BODY_START(content), size);
+        string[size] = '\0';
+        req->buf = uv_buf_init(string, size + 1);
+        printf("handle_response: %p\n%s\n", req, string);
         uv_write((uv_write_t*) req, client, &req->buf, 1, echo_write);
       } else if (!strcmp("close", tag)) {
         uv_stream_t *client = (uv_stream_t*)SCM_INT_VALUE(SCM_CAR(body));
