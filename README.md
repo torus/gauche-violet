@@ -1,11 +1,14 @@
 Libuv + Gauche = Violet
 =======================
 
+![](diagram.png)
+
 Requirements
 ------------
 
 * libgauche
 * libuv
+* libcurl
 
 References
 ----------
