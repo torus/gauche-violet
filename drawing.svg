@@ -159,9 +159,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="6.2748879"
-     inkscape:cx="293.92486"
-     inkscape:cy="648.86942"
+     inkscape:zoom="2.2185079"
+     inkscape:cx="131.70469"
+     inkscape:cy="614.03369"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
@@ -186,18 +186,6 @@
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
      id="layer1">
-    <text
-       xml:space="preserve"
-       style="font-style:normal;font-weight:normal;font-size:40px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-       x="119.64286"
-       y="222.71936"
-       id="text4136"
-       sodipodi:linespacing="125%"><tspan
-         sodipodi:role="line"
-         id="tspan4138"
-         x="119.64286"
-         y="222.71936"
-         style="font-size:15px">aho</tspan></text>
     <rect
        style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:1.12699997;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="rect4140"
@@ -206,21 +194,27 @@
        x="118.29941"
        y="291.26129"
        ry="0"
-       transform="matrix(0.90552633,0,0,0.73249776,-2.8234938,118.52772)" />
+       transform="matrix(0.90552633,0,0,0.73249776,-2.8234938,118.52772)"
+       inkscape:export-xdpi="144.08109"
+       inkscape:export-ydpi="144.08109" />
     <text
        xml:space="preserve"
        style="font-style:normal;font-weight:normal;font-size:13.75px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
        x="118.55814"
        y="403.65552"
        id="text4142"
-       sodipodi:linespacing="125%"><tspan
+       sodipodi:linespacing="125%"
+       inkscape:export-xdpi="144.08109"
+       inkscape:export-ydpi="144.08109"><tspan
          sodipodi:role="line"
          id="tspan4144"
          x="118.55814"
          y="403.65552">Libuv's main loop</tspan></text>
     <g
        id="g5000"
-       transform="translate(14.107129,43.928571)">
+       transform="translate(14.107129,43.928571)"
+       inkscape:export-xdpi="144.08109"
+       inkscape:export-ydpi="144.08109">
       <rect
          y="290.62601"
          x="296.62119"
@@ -246,7 +240,9 @@
     </g>
     <g
        id="g5006"
-       transform="translate(-3.7499872,-2.1428572)">
+       transform="translate(-3.7499872,-2.1428572)"
+       inkscape:export-xdpi="144.08109"
+       inkscape:export-ydpi="144.08109">
       <rect
          y="411.69742"
          x="314.4783"
@@ -272,7 +268,9 @@
     </g>
     <g
        id="g12794"
-       transform="translate(0.22588234,0)">
+       transform="translate(0.22588234,0)"
+       inkscape:export-xdpi="144.08109"
+       inkscape:export-ydpi="144.08109">
       <path
          sodipodi:nodetypes="cc"
          inkscape:connector-curvature="0"
@@ -290,7 +288,9 @@
     </g>
     <g
        transform="translate(0.22588234,75.973489)"
-       id="g12794-7">
+       id="g12794-7"
+       inkscape:export-xdpi="144.08109"
+       inkscape:export-ydpi="144.08109">
       <path
          sodipodi:nodetypes="cc"
          inkscape:connector-curvature="0"
