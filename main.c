@@ -1,3 +1,4 @@
+// -*- c-basic-offset: 4 -*-
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -30,7 +31,7 @@ void error_exit(ScmObj c)
     if (SCM_FALSEP(m)) {
         Scm_Printf(SCM_CURERR, "gosh: Thrown unknown condition: %S\n", c);
     } else {
-        Scm_Printf(SCM_CURERR, "gosh: %S: %A\n", Scm_ConditionTypeName(c), m);
+        Scm_ReportError(c);
     }
     Scm_Exit(1);
 }
