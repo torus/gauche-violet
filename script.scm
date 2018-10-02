@@ -23,18 +23,10 @@
         (loop))))))
 
 (define *response-queue* (make-queue))
-(define *request-map* (make-tree-map))
 
 (define (dequeue-response!)
   (dequeue! *response-queue* #f)
   )
-
-(define (on-result id . content)
-  (print #`"on-result ,id")
-  (let ((proc (tree-map-get *request-map* id #f)))
-    (when proc
-          (tree-map-delete! *request-map* id)
-          (apply proc content))))
 
 (define (on-new-connection)
   (print "new connection!"))
@@ -43,8 +35,7 @@
   (define (respond-to-client str)
     (push-task! `(res ,client ,str)))
   (define (close)
-    (print "virtual-output-port closed")
-    )
+    (print "virtual-output-port closed"))
   (make <virtual-output-port> :puts respond-to-client :close close))
 
 (define-http-handler "/"
@@ -98,19 +89,3 @@
   (inc! *task-id*)
 ;;  (print #`"task: ,*task-id* ,task")
   (enqueue! *response-queue* (cons *task-id* task)))
-
-(define (push-task/ret! task proc)
-  (push-task! task)
-  (tree-map-put! *request-map* *task-id* proc))
-
-(define (respond-hello client path headers)
-  (print "respond-hello running")
-
-  (push-task/ret! '(get "http://numbersapi.com/random/math?json")
-                  (lambda (result)
-                    ;; (print result)
-                    (push-task! `(res ,client
-                                      "HTTP/1.1 200 OK\nContent-Type: application/json\n\n"))
-                    (push-task! `(res ,client ,result))
-                    (push-task! `(close ,client))
-                    )))
