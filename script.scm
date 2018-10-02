@@ -42,28 +42,13 @@
 
 (define (on-read client buf)
   (let* ([iport (open-input-string buf)]
-         #;[line (read-line iport)]
          [vsock (make <violet-socket>
                   :client client
                   :input-port iport
                   :output-port (make-output-port client)
                   )])
     (with-module makiki (handle-client #f vsock))
-    #;(rxmatch-case line
-      [test eof-object?
-            (respond/ng (make-ng-request "(empty request)" csock) 400
-                        :no-response #t)]
-      [#/^(GET|HEAD|POST)\s+(\S+)\s+HTTP\/\d+\.\d+$/ (_ meth abs-path)
-          (receive (auth path query frag) (uri-decompose-hierarchical abs-path)
-            (let* ([path (uri-decode-string path :cgi-decode #t)]
-                   [hdrs (rfc822-read-headers iport)]
-                   )
-              (print path)
-              (print hdrs)
-              (respond-hello client path hdrs)
-              ))]
-      ))
-  )
+    ))
 
 (define-class <violet-socket> ()
   ((client :init-value #f :init-keyword :client)
