@@ -2,6 +2,7 @@
 (use rfc.822)
 (use data.queue)
 (use gauche.vport)
+(use gauche.net)
 
 (add-load-path "../gauche-rheingau/lib/")
 (use rheingau)
@@ -30,19 +31,16 @@
 
 (define (make-output-port client)
   (define (respond-to-client str)
-    (print #`"respond: ,str")
     (push-task! `(res ,client ,str)))
   (define (close)
-    (print "closed")
-    (push-task! `(close ,client)))
+    (print "virtual-output-port closed")
+    )
   (make <virtual-output-port> :puts respond-to-client :close close))
 
 (define-http-handler "/"
-  (^[req app] #?=(respond/ok req "<h1>It worked!</h1>")))
+  (^[req app] (respond/ok req "<h1>It worked!</h1>")))
 
 (define (on-read client buf)
-  #?=buf
-
   (let* ([iport (open-input-string buf)]
          #;[line (read-line iport)]
          [vsock (make <violet-socket>
@@ -71,16 +69,17 @@
   ((client :init-value #f :init-keyword :client)
    (input-port :init-value #f :init-keyword :input-port)
    (output-port :init-value #f :init-keyword :output-port)
-   (addr :init-value #f))
+   (addr :init-value (car (make-sockaddrs "localhost" 2222))))
 )
 
 (define-method virtual-socket-input-port ((vsock <violet-socket>))
-  (print "virtual-socket-input-port violet")
-  #?=(slot-ref vsock 'input-port))
+  (slot-ref vsock 'input-port))
 (define-method virtual-socket-output-port ((vsock <violet-socket>))
   (slot-ref vsock 'output-port))
 
 (define-method virtual-socket-getpeername ((vsock <violet-socket>))
+  (slot-ref vsock 'addr))
+(define-method virtual-socket-getsockname ((vsock <violet-socket>))
   (slot-ref vsock 'addr))
 
 (define-method virtual-socket-close ((vsock <violet-socket>))
@@ -100,6 +99,7 @@
 (define *task-id* 0)
 (define (push-task! task)
   (inc! *task-id*)
+;;  (print #`"task: ,*task-id* ,task")
   (enqueue! *response-queue* (cons *task-id* task)))
 
 (define (push-task/ret! task proc)

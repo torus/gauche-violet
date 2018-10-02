@@ -79,7 +79,7 @@ void destroy_curl_context(curl_context_t *context) {
 }
 
 
-void add_download(const char *url, int id) {
+void add_download(const char *url, long id) {
     /* char filename[50]; */
     /* sprintf(filename, "%d.download", num); */
     /* FILE *file; */
@@ -163,12 +163,14 @@ void free_write_req(uv_write_t *req) {
 }
 
 void echo_write(uv_write_t *req, int status) {
-  if (status) {
-    fprintf(stderr, "Write error %s\n", uv_strerror(status));
-  }
-  printf("echo_write: %p\n", req);
-  free_write_req(req);
-  printf("echo_write: freed\n");
+    if (status) {
+        fprintf(stderr, "Write error %s\n", uv_strerror(status));
+    }
+
+    write_req_t *wr = (write_req_t*)req;
+    /* printf("echo_write: %p\t%lu\"%s\"\n", req, wr->buf.len, wr->buf.base); */
+    free_write_req(req);
+    /* printf("echo_write: freed\n"); */
 }
 
 ScmObj read_proc = SCM_UNDEFINED;
@@ -236,11 +238,11 @@ void handle_response(uv_idle_t* handle) {
       // (id 'res client "response")
       // (id 'close client)
       // (id 'get "url")
-      int id = SCM_INT_VALUE(SCM_CAR(result));
+      long id = SCM_INT_VALUE(SCM_CAR(result));
       const char *tag = SCM_STRING_BODY_START(SCM_STRING_BODY(SCM_SYMBOL_NAME(SCM_CADR(result))));
       ScmObj body = SCM_CDDR(result);
 
-      printf("handle_response: % 8d: %s\n", id, tag);
+      /* printf("handle_response: % 4lld: [%s]\t", id, tag); */
 
       if (!strcmp("res", tag)) {
         uv_stream_t *client = (uv_stream_t*)SCM_INT_VALUE(SCM_CAR(body));
@@ -251,12 +253,12 @@ void handle_response(uv_idle_t* handle) {
         char *string = (char*)malloc(size + 1);
         memcpy(string, SCM_STRING_BODY_START(content), size);
         string[size] = '\0';
-        req->buf = uv_buf_init(string, size + 1);
-        printf("handle_response: %p\n%s\n", req, string);
+        req->buf = uv_buf_init(string, size);
+        /* printf("%p\t%p\t%s\n", client, req, string); */
         uv_write((uv_write_t*) req, client, &req->buf, 1, echo_write);
       } else if (!strcmp("close", tag)) {
         uv_stream_t *client = (uv_stream_t*)SCM_INT_VALUE(SCM_CAR(body));
-        printf("handle_response: closing %p\n", client);
+        /* printf("closing %p\n", client); */
         uv_close((uv_handle_t*)client, NULL);
       } else if (!strcmp("get", tag)) {
         const ScmStringBody* content = SCM_STRING_BODY(SCM_CAR(body));
@@ -265,6 +267,9 @@ void handle_response(uv_idle_t* handle) {
         memcpy(url, SCM_STRING_BODY_START(content), SCM_STRING_BODY_SIZE(content));
         add_download(url, id);
         // needs free
+      } else {
+          printf("handle_response: unknown tag %s\n", tag);
+          abort();
       }
     } else {
       return;
