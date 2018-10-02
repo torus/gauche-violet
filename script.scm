@@ -3,14 +3,24 @@
 (use data.queue)
 (use gauche.vport)
 (use gauche.net)
+(use gauche.threads)
 
 (add-load-path "../gauche-rheingau/lib/")
 (use rheingau)
 (rheingau-use makiki)
 
+(define *task-queue* (make-mtqueue))
+
 (define (init)
-  (print "hello from script file!")
-  #;(car #f))
+  (print "Starting worker thread.")
+  (thread-start!
+   (make-thread
+    (lambda ()
+      (let loop ()
+        (let ((task (dequeue/wait! *task-queue*)))
+          (print "got task")
+          (task))
+        (loop))))))
 
 (define *response-queue* (make-queue))
 (define *request-map* (make-tree-map))
@@ -47,7 +57,9 @@
                   :input-port iport
                   :output-port (make-output-port client)
                   )])
-    (with-module makiki (handle-client #f vsock))
+    (print "enqueuing")
+    (enqueue! *task-queue* (lambda ()
+                             (with-module makiki (handle-client #f vsock))))
     ))
 
 (define-class <violet-socket> ()
