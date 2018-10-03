@@ -38,9 +38,6 @@
     (print "virtual-output-port closed"))
   (make <virtual-output-port> :puts respond-to-client :close close))
 
-(define-http-handler "/"
-  (^[req app] (respond/ok req "<h1>It worked!</h1>")))
-
 (define (on-read client buf)
   (let* ([iport (open-input-string buf)]
          [vsock (make <violet-socket>
@@ -89,3 +86,11 @@
   (inc! *task-id*)
 ;;  (print #`"task: ,*task-id* ,task")
   (enqueue! *response-queue* (cons *task-id* task)))
+
+;;
+;; Application
+;;
+
+(define-http-handler "/"
+  (^[req app] (respond/ok req "<h1>It worked!</h1>")))
+
