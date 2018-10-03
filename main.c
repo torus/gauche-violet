@@ -32,14 +32,14 @@ void error_exit(ScmObj c)
 struct sockaddr_in addr;
 
 typedef struct {
-  uv_write_t req;
-  uv_buf_t buf;
+    uv_write_t req;
+    uv_buf_t buf;
 } write_req_t;
 
 void free_write_req(uv_write_t *req) {
-  write_req_t *wr = (write_req_t*) req;
-  free(wr->buf.base);
-  free(wr);
+    write_req_t *wr = (write_req_t*) req;
+    free(wr->buf.base);
+    free(wr);
 }
 
 void echo_write(uv_write_t *req, int status) {
@@ -56,135 +56,136 @@ void echo_write(uv_write_t *req, int status) {
 ScmObj read_proc = SCM_UNDEFINED;
 
 void echo_read(uv_stream_t *client, ssize_t nread, const uv_buf_t *buf) {
-  if (nread > 0) {
-    ScmEvalPacket epak;
-    if (Scm_Apply(read_proc, SCM_LIST2(SCM_MAKE_INT(client),
-                                       Scm_MakeString(buf->base, nread, -1, 0)), &epak) < 0) {
-      error_exit(epak.exception);
+    if (nread > 0) {
+        ScmEvalPacket epak;
+        if (Scm_Apply(read_proc, SCM_LIST2(SCM_MAKE_INT(client),
+                                           Scm_MakeString(buf->base, nread, -1, 0)), &epak) < 0) {
+            error_exit(epak.exception);
+        }
+
+        return;
+    }
+    if (nread < 0) {
+        if (nread != UV_EOF)
+            fprintf(stderr, "Read error %s\n", uv_err_name(nread));
+        uv_close((uv_handle_t*) client, NULL);
     }
 
-    return;
-  }
-  if (nread < 0) {
-    if (nread != UV_EOF)
-      fprintf(stderr, "Read error %s\n", uv_err_name(nread));
-    uv_close((uv_handle_t*) client, NULL);
-  }
-
-  free(buf->base);
+    free(buf->base);
 }
 
 void alloc_buffer(uv_handle_t *handle, size_t suggested_size, uv_buf_t *buf) {
-  buf->base = (char*) malloc(suggested_size);
-  buf->len = suggested_size;
+    buf->base = (char*) malloc(suggested_size);
+    buf->len = suggested_size;
 }
 
 ScmObj new_conn_proc = SCM_UNDEFINED;
 
 void on_new_connection(uv_stream_t *server, int status) {
-  if (status < 0) {
-    fprintf(stderr, "New connection error %s\n", uv_strerror(status));
-    // error!
-    return;
-  }
+    if (status < 0) {
+        fprintf(stderr, "New connection error %s\n", uv_strerror(status));
+        // error!
+        return;
+    }
 
-  uv_tcp_t *client = (uv_tcp_t*) malloc(sizeof(uv_tcp_t));
-  uv_tcp_init(loop, client);
-  if (uv_accept(server, (uv_stream_t*) client) == 0) {
-    uv_read_start((uv_stream_t*) client, alloc_buffer, echo_read);
-  }
-  else {
-    uv_close((uv_handle_t*) client, NULL);
-  }
+    uv_tcp_t *client = (uv_tcp_t*) malloc(sizeof(uv_tcp_t));
+    uv_tcp_init(loop, client);
+    if (uv_accept(server, (uv_stream_t*) client) == 0) {
+        uv_read_start((uv_stream_t*) client, alloc_buffer, echo_read);
+    }
+    else {
+        uv_close((uv_handle_t*) client, NULL);
+    }
 
-  printf("%p\n", client);
+    printf("%p\n", client);
 
-  ScmEvalPacket epak;
-  if (Scm_Apply(new_conn_proc, SCM_NIL, &epak) < 0) {
-    error_exit(epak.exception);
-  }
+    ScmEvalPacket epak;
+    if (Scm_Apply(new_conn_proc, SCM_NIL, &epak) < 0) {
+        error_exit(epak.exception);
+    }
 }
 
 ScmObj dequeue_response_proc = SCM_UNDEFINED;
 
 void handle_response(uv_idle_t* handle) {
-  while (1) {
-    ScmEvalPacket epak;
-    if (Scm_Apply(dequeue_response_proc, SCM_NIL, &epak) < 0) {
-      error_exit(epak.exception);
-    }
-    ScmObj result = epak.results[0];
-    if (SCM_PAIRP(result)) {
-      // (id 'res client "response")
-      // (id 'close client)
-      long id = SCM_INT_VALUE(SCM_CAR(result));
-      const char *tag = SCM_STRING_BODY_START(SCM_STRING_BODY(SCM_SYMBOL_NAME(SCM_CADR(result))));
-      ScmObj body = SCM_CDDR(result);
+    while (1) {
+        ScmEvalPacket epak;
+        if (Scm_Apply(dequeue_response_proc, SCM_NIL, &epak) < 0) {
+            error_exit(epak.exception);
+        }
+        ScmObj result = epak.results[0];
+        if (SCM_PAIRP(result)) {
+            // (id 'res client "response")
+            // (id 'close client)
+            long id = SCM_INT_VALUE(SCM_CAR(result));
+            const char *tag =
+                SCM_STRING_BODY_START(SCM_STRING_BODY(SCM_SYMBOL_NAME(SCM_CADR(result))));
+            ScmObj body = SCM_CDDR(result);
 
-      if (!strcmp("res", tag)) {
-        uv_stream_t *client = (uv_stream_t*)SCM_INT_VALUE(SCM_CAR(body));
-        const ScmStringBody* content = SCM_STRING_BODY(SCM_CADR(body));
+            if (!strcmp("res", tag)) {
+                uv_stream_t *client = (uv_stream_t*)SCM_INT_VALUE(SCM_CAR(body));
+                const ScmStringBody* content = SCM_STRING_BODY(SCM_CADR(body));
 
-        write_req_t *req = (write_req_t*) malloc(sizeof(write_req_t));
-        int size = SCM_STRING_BODY_SIZE(content);
-        char *string = (char*)malloc(size);
-        memcpy(string, SCM_STRING_BODY_START(content), size);
-        req->buf = uv_buf_init(string, size);
-        uv_write((uv_write_t*) req, client, &req->buf, 1, echo_write);
-      } else if (!strcmp("close", tag)) {
-        uv_stream_t *client = (uv_stream_t*)SCM_INT_VALUE(SCM_CAR(body));
-        uv_close((uv_handle_t*)client, NULL);
-      } else {
-          printf("handle_response: unknown tag %s\n", tag);
-          abort();
-      }
-    } else {
-      return;
+                write_req_t *req = (write_req_t*) malloc(sizeof(write_req_t));
+                int size = SCM_STRING_BODY_SIZE(content);
+                char *string = (char*)malloc(size);
+                memcpy(string, SCM_STRING_BODY_START(content), size);
+                req->buf = uv_buf_init(string, size);
+                uv_write((uv_write_t*) req, client, &req->buf, 1, echo_write);
+            } else if (!strcmp("close", tag)) {
+                uv_stream_t *client = (uv_stream_t*)SCM_INT_VALUE(SCM_CAR(body));
+                uv_close((uv_handle_t*)client, NULL);
+            } else {
+                printf("handle_response: unknown tag %s\n", tag);
+                abort();
+            }
+        } else {
+            return;
+        }
     }
-  }
 }
 
 int main() {
-  loop = uv_default_loop();
+    loop = uv_default_loop();
 
-  // Gauche
-  Scm_Init(GAUCHE_SIGNATURE);
+    // Gauche
+    Scm_Init(GAUCHE_SIGNATURE);
 
-  ScmLoadPacket lpak;
-  if (Scm_Load("./script.scm", 0, &lpak) < 0) {
-    error_exit(lpak.exception);
-  }
+    ScmLoadPacket lpak;
+    if (Scm_Load("./script.scm", 0, &lpak) < 0) {
+        error_exit(lpak.exception);
+    }
 
-  ScmObj init_proc = SCM_UNDEFINED;
+    ScmObj init_proc = SCM_UNDEFINED;
 
-  SCM_BIND_PROC(init_proc,             "init",              Scm_CurrentModule());
-  SCM_BIND_PROC(new_conn_proc,         "on-new-connection", Scm_CurrentModule());
-  SCM_BIND_PROC(read_proc,             "on-read",           Scm_CurrentModule());
-  SCM_BIND_PROC(dequeue_response_proc, "dequeue-response!", Scm_CurrentModule());
+    SCM_BIND_PROC(init_proc,             "init",              Scm_CurrentModule());
+    SCM_BIND_PROC(new_conn_proc,         "on-new-connection", Scm_CurrentModule());
+    SCM_BIND_PROC(read_proc,             "on-read",           Scm_CurrentModule());
+    SCM_BIND_PROC(dequeue_response_proc, "dequeue-response!", Scm_CurrentModule());
 
-  ScmEvalPacket epak;
-  if (Scm_Apply(init_proc, SCM_NIL, &epak) < 0) {
-    error_exit(epak.exception);
-  }
+    ScmEvalPacket epak;
+    if (Scm_Apply(init_proc, SCM_NIL, &epak) < 0) {
+        error_exit(epak.exception);
+    }
 
-  uv_timer_init(loop, &timeout);
+    uv_timer_init(loop, &timeout);
 
-  // Main loop
-  uv_idle_t idler;
+    // Main loop
+    uv_idle_t idler;
 
-  uv_idle_init(uv_default_loop(), &idler);
-  uv_idle_start(&idler, handle_response);
+    uv_idle_init(uv_default_loop(), &idler);
+    uv_idle_start(&idler, handle_response);
 
-  uv_tcp_t server;
-  uv_tcp_init(loop, &server);
+    uv_tcp_t server;
+    uv_tcp_init(loop, &server);
 
-  uv_ip4_addr("0.0.0.0", DEFAULT_PORT, &addr);
+    uv_ip4_addr("0.0.0.0", DEFAULT_PORT, &addr);
 
-  uv_tcp_bind(&server, (const struct sockaddr*)&addr, 0);
-  int r = uv_listen((uv_stream_t*) &server, DEFAULT_BACKLOG, on_new_connection);
-  if (r) {
-    fprintf(stderr, "Listen error %s\n", uv_strerror(r));
-    return 1;
-  }
-  return uv_run(loop, UV_RUN_DEFAULT);
+    uv_tcp_bind(&server, (const struct sockaddr*)&addr, 0);
+    int r = uv_listen((uv_stream_t*) &server, DEFAULT_BACKLOG, on_new_connection);
+    if (r) {
+        fprintf(stderr, "Listen error %s\n", uv_strerror(r));
+        return 1;
+    }
+    return uv_run(loop, UV_RUN_DEFAULT);
 }
