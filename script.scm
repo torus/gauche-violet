@@ -1,5 +1,6 @@
 (use rfc.uri)
 (use rfc.822)
+(use rfc.http)
 (use data.queue)
 (use gauche.vport)
 (use gauche.net)
@@ -92,5 +93,11 @@
 ;;
 
 (define-http-handler "/"
-  (^[req app] (respond/ok req "<h1>It worked!</h1>")))
-
+  (^[req app]
+    (thread-start!
+     (make-thread
+      (^[]
+        (print "thread starting")
+        (let-values (((status header body)
+                      (http-get "numbersapi.com" "/random/math?json")))
+          (respond/ok req `(sxml (html (body (h1 "It worked!") (pre ,body)))))))))))
