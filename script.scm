@@ -8,7 +8,7 @@
 
 (add-load-path "../gauche-rheingau/lib/")
 (use rheingau)
-(rheingau-use makiki)
+(rheingau-use kaheka)
 
 (define *task-queue* (make-mtqueue))
 
@@ -48,7 +48,7 @@
                   )])
     (print "enqueuing")
     (enqueue! *task-queue* (lambda ()
-                             (with-module makiki (handle-client #f vsock))))
+                             (with-module kaheka (handle-client #f vsock))))
     ))
 
 (define-class <violet-socket> ()
