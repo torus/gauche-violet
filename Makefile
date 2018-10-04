@@ -20,4 +20,4 @@ $(RHEINGAU):
 	git clone git@github.com:torus/gauche-rheingau.git $(RHEINGAU)
 
 clean:
-	rm -rf *.o $(TARGET) $(KAHEKA) $(RHEINGAU)
+	rm -rf *.o $(TARGET) $(KAHEKA) $(RHEINGAU) $(TARGET).dSYM
