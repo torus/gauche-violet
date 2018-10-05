@@ -16,6 +16,9 @@ Run
 $ docker-compose up
 ```
 
+Server runs on http://localhost:2222
+
+
 Requirements
 ------------
 
