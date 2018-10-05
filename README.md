@@ -1,14 +1,16 @@
 Libuv + Gauche = Violet
 =======================
 
-![](diagram.png)
+```
+Libuv <-> makiki <-> File I/O
+                 <-> Network I/O
+```
 
 Requirements
 ------------
 
 * libgauche
 * libuv
-* libcurl
 
 References
 ----------
