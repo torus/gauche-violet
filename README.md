@@ -1,9 +1,19 @@
 Libuv + Gauche = Violet
 =======================
 
+Overview
+--------
+
 ```
 Libuv <-> makiki <-> File I/O
                  <-> Network I/O
+```
+
+Run
+---
+
+```
+$ docker-compose up
 ```
 
 Requirements

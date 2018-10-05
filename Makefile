@@ -14,10 +14,10 @@ $(TARGET): main.c
 	$(CC) -g -I/usr/local/include -o $(TARGET) main.c $(CFLAGS) $(LFLAGS)
 
 $(KAHEKA): $(RHEINGAU)
-	gosh $(RHEINGAU)/rheingau.scm install kaheka
+	gosh -I. $(RHEINGAU)/rheingau.scm install kaheka
 
 $(RHEINGAU):
-	git clone git@github.com:torus/gauche-rheingau.git $(RHEINGAU)
+	git clone https://github.com/torus/gauche-rheingau.git $(RHEINGAU)
 
 clean:
-	rm -rf *.o $(TARGET) $(KAHEKA) $(RHEINGAU) $(TARGET).dSYM
+	rm -rf *.o $(TARGET) gosh-modules $(RHEINGAU) $(TARGET).dSYM

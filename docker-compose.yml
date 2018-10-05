@@ -1,6 +1,10 @@
 version: '2'
 services:
   gosh:
-    image: practicalscheme/gauche
+    build: .
     volumes:
       - .:/code
+    ports:
+      - "2222:2222"
+    expose:
+      - "2222"

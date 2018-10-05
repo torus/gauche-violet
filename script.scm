@@ -6,7 +6,7 @@
 (use gauche.net)
 (use gauche.threads)
 
-(add-load-path "../gauche-rheingau/lib/")
+(add-load-path "./gauche-rheingau/lib/")
 (use rheingau)
 (rheingau-use kaheka)
 
