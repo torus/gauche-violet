@@ -14,10 +14,13 @@
 
 (define-http-handler "/"
   (^[req app]
-    (thread-start!
-     (make-thread
-      (^[]
-        (print "thread starting")
-        (let-values (((status header body)
-                      (http-get "numbersapi.com" "/random/math?json")))
-          (respond/ok req `(sxml (html (body (h1 "It worked!") (pre ,body)))))))))))
+    (enqueue-task!
+     (^[]
+       (thread-start!
+        (make-thread
+         (^[]
+           (let-values (((status header body)
+                         (http-get "numbersapi.com" "/random/math?json")))
+             (enqueue-task!
+              (^[]
+                (respond/ok req `(sxml (html (body (h1 "It worked!") (pre ,body)))))))))))))))

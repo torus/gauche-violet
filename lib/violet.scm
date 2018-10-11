@@ -11,12 +11,15 @@
   (use rheingau)
   (rheingau-use kaheka)
 
- (export init on-read on-new-connection dequeue-response!)
+  (export init on-read on-new-connection dequeue-response! enqueue-task!)
 )
 
 (select-module violet)
 
 (define *task-queue* (make-mtqueue))
+
+(define (enqueue-task! proc)
+  (enqueue! *task-queue* proc))
 
 (define (init)
   (print "Starting worker thread.")
@@ -53,8 +56,8 @@
                   :output-port (make-output-port client)
                   )])
     (print "enqueuing")
-    (enqueue! *task-queue* (lambda ()
-                             (with-module kaheka (handle-client #f vsock))))
+    (enqueue-task! (lambda ()
+                     (with-module kaheka (handle-client #f vsock))))
     ))
 
 (define-class <violet-socket> ()
