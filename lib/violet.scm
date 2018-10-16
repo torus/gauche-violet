@@ -29,7 +29,8 @@
       (let loop ()
         (let ((task (dequeue/wait! *task-queue*)))
           (print "got task")
-          (task))
+          (task)
+          (flush))
         (loop))))))
 
 (define *response-queue* (make-queue))

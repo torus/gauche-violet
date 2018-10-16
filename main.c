@@ -44,7 +44,7 @@ void free_write_req(uv_write_t *req) {
 
 void echo_write(uv_write_t *req, int status) {
     if (status) {
-        fprintf(stderr, "Write error %s\n", uv_strerror(status));
+        Scm_Printf(SCM_CURERR, "Write error %s\n", uv_strerror(status));
     }
 
     write_req_t *wr = (write_req_t*)req;
@@ -67,8 +67,9 @@ void echo_read(uv_stream_t *client, ssize_t nread, const uv_buf_t *buf) {
     }
     if (nread < 0) {
         if (nread != UV_EOF)
-            fprintf(stderr, "Read error %s\n", uv_err_name(nread));
-        uv_close((uv_handle_t*) client, NULL);
+            Scm_Printf(SCM_CURERR, "Read error %s\n", uv_err_name(nread));
+        /* Scm_Printf(SCM_CURERR, "%s: closing %p\n", __FUNCTION__, client); */
+        /* uv_close((uv_handle_t*) client, NULL); */
     }
 
     free(buf->base);
@@ -83,7 +84,7 @@ ScmObj new_conn_proc = SCM_UNDEFINED;
 
 void on_new_connection(uv_stream_t *server, int status) {
     if (status < 0) {
-        fprintf(stderr, "New connection error %s\n", uv_strerror(status));
+        Scm_Printf(SCM_CURERR, "New connection error %s\n", uv_strerror(status));
         // error!
         return;
     }
@@ -94,10 +95,11 @@ void on_new_connection(uv_stream_t *server, int status) {
         uv_read_start((uv_stream_t*) client, alloc_buffer, echo_read);
     }
     else {
+        Scm_Printf(SCM_CURERR, "%s: closing %p\n", __FUNCTION__, client);
         uv_close((uv_handle_t*) client, NULL);
     }
 
-    printf("%p\n", client);
+    Scm_Printf(SCM_CURERR, "%s: client %p\n", __FUNCTION__, client);
 
     ScmEvalPacket epak;
     if (Scm_Apply(new_conn_proc, SCM_NIL, &epak) < 0) {
@@ -134,6 +136,7 @@ void handle_response(uv_idle_t* handle) {
                 uv_write((uv_write_t*) req, client, &req->buf, 1, echo_write);
             } else if (!strcmp("close", tag)) {
                 uv_stream_t *client = (uv_stream_t*)SCM_INT_VALUE(SCM_CAR(body));
+                Scm_Printf(SCM_CURERR, "%s: closing %p\n", __FUNCTION__, client);
                 uv_close((uv_handle_t*)client, NULL);
             } else {
                 printf("handle_response: unknown tag %s\n", tag);
@@ -184,8 +187,9 @@ int main() {
     uv_tcp_bind(&server, (const struct sockaddr*)&addr, 0);
     int r = uv_listen((uv_stream_t*) &server, DEFAULT_BACKLOG, on_new_connection);
     if (r) {
-        fprintf(stderr, "Listen error %s\n", uv_strerror(r));
+        Scm_Printf(SCM_CURERR, "Listen error %s\n", uv_strerror(r));
         return 1;
     }
+    Scm_Printf(SCM_CURERR, "%s: starting\n", __FUNCTION__);
     return uv_run(loop, UV_RUN_DEFAULT);
 }
