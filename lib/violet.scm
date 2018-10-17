@@ -28,7 +28,6 @@
     (lambda ()
       (let loop ()
         (let ((task (dequeue/wait! *task-queue*)))
-          (print "got task")
           (task)
           (flush))
         (loop))))))
@@ -40,13 +39,14 @@
   )
 
 (define (on-new-connection)
-  (print "new connection!"))
+  )
 
 (define (make-output-port client)
   (define (respond-to-client str)
     (push-task! `(res ,client ,str)))
   (define (close)
-    (print "virtual-output-port closed"))
+    ;; Do nothing here. The socket will be closed after all the tasks are done.
+    )
   (make <virtual-output-port> :puts respond-to-client :close close))
 
 (define (on-read client buf)
@@ -56,7 +56,6 @@
                   :input-port iport
                   :output-port (make-output-port client)
                   )])
-    (print "enqueuing")
     (enqueue-task! (lambda ()
                      (with-module kaheka (handle-client #f vsock))))
     ))
@@ -79,21 +78,14 @@
   (slot-ref vsock 'addr))
 
 (define-method virtual-socket-close ((vsock <violet-socket>))
-  (print "socket-close called")
   (push-task! `(close ,(slot-ref vsock 'client)))
   )
 
 (define-method virtual-socket-shutdown ((vsock <violet-socket>) param)
-  (print "socket-shutdown called")
-
+  ;; Not sure what should be done here??
   )
-
-;; make-ng-request -> socket-getpeername
-;; make-request -> socket-getpeername
-;; %socket-discard -> socket-close socket-shutdown
 
 (define *task-id* 0)
 (define (push-task! task)
   (inc! *task-id*)
-;;  (print #`"task: ,*task-id* ,task")
   (enqueue! *response-queue* (cons *task-id* task)))
