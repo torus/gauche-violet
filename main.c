@@ -128,6 +128,7 @@ void handle_response(uv_idle_t* handle) {
                 uv_write((uv_write_t*) req, client, &req->buf, 1, echo_write);
             } else if (!strcmp("close", tag)) {
                 uv_stream_t *client = (uv_stream_t*)SCM_INT_VALUE(SCM_CAR(body));
+                /* Scm_Printf(SCM_CURERR, "close: %S\n", body); */
                 uv_close((uv_handle_t*)client, NULL);
             } else {
                 Scm_Printf(SCM_CURERR, "handle_response: unknown tag %s\n", tag);

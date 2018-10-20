@@ -64,7 +64,8 @@
   ((client :init-value #f :init-keyword :client)
    (input-port :init-value #f :init-keyword :input-port)
    (output-port :init-value #f :init-keyword :output-port)
-   (addr :init-value (car (make-sockaddrs "localhost" 2222))))
+   (addr :init-value (car (make-sockaddrs "localhost" 2222)))
+   (closed? :init-value #f))
 )
 
 (define-method virtual-socket-input-port ((vsock <violet-socket>))
@@ -78,7 +79,11 @@
   (slot-ref vsock 'addr))
 
 (define-method virtual-socket-close ((vsock <violet-socket>))
-  (push-task! `(close ,(slot-ref vsock 'client)))
+  (if (ref vsock 'closed?)
+      (print #`"double closing attempted: ,vsock")
+      (begin
+        (set! (ref vsock 'closed?) #t)
+        (push-task! `(close ,(slot-ref vsock 'client)))))
   )
 
 (define-method virtual-socket-shutdown ((vsock <violet-socket>) param)

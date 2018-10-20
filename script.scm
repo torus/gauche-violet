@@ -12,40 +12,37 @@
 ;; Application
 ;;
 
-(define-http-handler "/"
-  (^[req app]
-    (enqueue-task!
-     (^[]
-       (thread-start!
-        (make-thread
-         (^[]
-           (let-values (((status header body)
-                         (http-get "numbersapi.com" "/random/math?json")))
-             (enqueue-task!
-              (^[]
-                (respond/ok req `(sxml (html (body (h1 "It worked!") (pre ,body)))))))))))))))
-
 (define (violet-add-task! proc)
   (enqueue-task! proc))
 
-(define (violet-await exit proc)
-  (call/cc (lambda (cont)
-             (thread-start! 
-              (make-thread
-               (^[]
-                 (let ((result (proc)))
-                   (enqueue-task! (^[] (cont result)))))))
-             (exit))))
+(define (violet-await yield)
+  (^[proc]
+    (call/cc (lambda (cont)
+               (thread-start! 
+                (make-thread
+                 (^[]
+                   (let ((result (proc)))
+                     (enqueue-task! (^[] (cont result)))))))
+               (yield)))))
 
-(define-http-handler "/2"
+(define (violet-async func)
+  (violet-add-task!
+   (^[]
+     (call/cc (lambda (yield)
+                (func yield))))))
+
+(define-http-handler "/"
   (^[req app]
-    (violet-add-task!
-     (^[]
-       (call/cc (lambda (outer)
-                  (let ((content (violet-await
-                                  outer
-                                  (^[]
-                                    (let-values (((status header body)
-                                                  (http-get "numbersapi.com" "/random/math?json")))
-                                      body)))))
-                    (respond/ok req `(sxml (html (body (h1 "It worked!!!") (pre ,content))))))))))))
+    (violet-async
+     (^[yield]
+       (let ((content ((violet-await yield)
+                       (^[]
+                         (call-with-input-file "/dev/random"
+                           (^p
+                            (let* ((ch (read-char p))
+                                  (result (if (char? ch)
+                                              (number->string (char->integer ch))
+                                              (x->string ch))))
+                              result)))))))
+         (respond/ok req `(sxml (html (body (h1 "It worked!!!") (pre ,content))))))))))
+
