@@ -31,13 +31,13 @@
   (violet-add-task!
    (^[]
      (call/cc (lambda (yield)
-                (func yield))))))
+                (func (violet-await yield)))))))
 
 (define-http-handler "/"
   (^[req app]
     (violet-async
      (^[yield]
-       (let ((content ((violet-await yield)
+       (let ((content (yield
                        (^[]
                          (call-with-input-file "/dev/random"
                            (^p
