@@ -21,7 +21,9 @@
                (thread-start! 
                 (make-thread
                  (^[]
-                   (let ((result (proc)))
+                   (let ((result 
+                          (guard (exc [else (x->string exc)])
+                                 (proc))))
                      (enqueue-task! (^[] (cont result)))))))
                (yield)))))
 
