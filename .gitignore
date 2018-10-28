@@ -3,3 +3,4 @@ violet
 /gosh-modules/
 *.dSYM/
 /gauche-rheingau/
+.DS_Store
