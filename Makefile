@@ -1,6 +1,8 @@
 TARGET=violet
 CFLAGS=$(shell gauche-config -I)
-LFLAGS=-luv $(shell gauche-config -L) -lgauche-0.9
+LIBPATH=$(shell gauche-config -L)
+LFLAGS=-luv $(LIBPATH) -lgauche-0.97
+LD_LIBRARY_PATH=$(shell gauche-config --sysarchdir)
 
 KAHEKA=gosh-modules/kaheka
 RHEINGAU=gauche-rheingau
@@ -8,7 +10,7 @@ RHEINGAU=gauche-rheingau
 build: $(TARGET)
 
 run: $(TARGET) $(KAHEKA)
-	./$(TARGET)
+	LD_LIBRARY_PATH=$(LD_LIBRARY_PATH) ./$(TARGET)
 
 ## docker run --rm -p 2222:2222 -v$PWD:/code -w /code -t -i gauche-violet_gosh make debug
 debug: $(TARGET) $(KAHEKA)

@@ -1,9 +1,11 @@
 (use gauche.threads)
 (use rfc.http)
 
-(add-load-path "./gauche-rheingau/lib/")
-(use rheingau)
-(rheingau-use kaheka)
+;; (add-load-path "./gauche-rheingau/lib/")
+;; (use rheingau)
+;; (rheingau-use kaheka)
+(add-load-path "./gosh-modules/makiki")
+(use makiki)
 
 (add-load-path "./lib/")
 (use violet)

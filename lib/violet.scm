@@ -6,10 +6,13 @@
   (use gauche.vport)
   (use gauche.net)
   (use gauche.threads)
+  (use gauche.connection)
 
-  (add-load-path "./gauche-rheingau/lib/")
-  (use rheingau)
-  (rheingau-use kaheka)
+  ;; (add-load-path "./gauche-rheingau/lib/")
+  ;; (use rheingau)
+  ;; (rheingau-use kaheka)
+  (add-load-path "./gosh-modules/makiki")
+  (use makiki)
 
   (export init on-read on-new-connection dequeue-response! enqueue-task!)
 )
@@ -57,10 +60,10 @@
                   :output-port (make-output-port client)
                   )])
     (enqueue-task! (lambda ()
-                     (with-module kaheka (handle-client #f vsock))))
+                     (with-module makiki (handle-client #f vsock))))
     ))
 
-(define-class <violet-socket> ()
+(define-class <violet-socket> (<connection>)
   ((client :init-value #f :init-keyword :client)
    (input-port :init-value #f :init-keyword :input-port)
    (output-port :init-value #f :init-keyword :output-port)
@@ -68,17 +71,21 @@
    (closed? :init-value #f))
 )
 
-(define-method virtual-socket-input-port ((vsock <violet-socket>))
+
+;; (define-generic connection-address-name)
+;; (define-method connection-address-name ((a <string>)) a)
+
+(define-method connection-input-port ((vsock <violet-socket>))
   (slot-ref vsock 'input-port))
-(define-method virtual-socket-output-port ((vsock <violet-socket>))
+(define-method connection-output-port ((vsock <violet-socket>))
   (slot-ref vsock 'output-port))
 
-(define-method virtual-socket-getpeername ((vsock <violet-socket>))
+(define-method connection-peer-address ((vsock <violet-socket>))
   (slot-ref vsock 'addr))
-(define-method virtual-socket-getsockname ((vsock <violet-socket>))
+(define-method connection-self-address ((vsock <violet-socket>))
   (slot-ref vsock 'addr))
 
-(define-method virtual-socket-close ((vsock <violet-socket>))
+(define-method connection-close ((vsock <violet-socket>))
   (if (ref vsock 'closed?)
       (print #`"double closing attempted: ,vsock")
       (begin
@@ -86,7 +93,7 @@
         (push-task! `(close ,(slot-ref vsock 'client)))))
   )
 
-(define-method virtual-socket-shutdown ((vsock <violet-socket>) param)
+(define-method connection-shutdown ((vsock <violet-socket>) param)
   ;; Not sure what should be done here??
   )
 

@@ -24,7 +24,7 @@ void error_exit(ScmObj c)
     if (SCM_FALSEP(m)) {
         Scm_Printf(SCM_CURERR, "gosh: Thrown unknown condition: %S\n", c);
     } else {
-        Scm_ReportError(c);
+        Scm_ReportError(c, SCM_TRUE);
     }
     Scm_Exit(1);
 }
