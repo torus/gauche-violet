@@ -12,9 +12,6 @@
 ;; Application
 ;;
 
-(define (violet-add-task! proc)
-  (enqueue-task! proc))
-
 (define (violet-await yield)
   (^[proc]
     (call/cc (lambda (cont)
@@ -28,7 +25,7 @@
                (yield)))))
 
 (define (violet-async func)
-  (violet-add-task!
+  (enqueue-task!
    (^[]
      (call/cc (lambda (yield)
                 (func (violet-await yield)))))))
@@ -40,7 +37,7 @@
             (result (if (char? ch)
                         (let ((num (char->integer ch)))
                           (thread-sleep! (/ num 1000))
-                          (number->string num))
+                          num)
                         (x->string ch))))
        result))))
 
@@ -48,7 +45,12 @@
   (^[req app]
     (violet-async
      (^[await]
-       (let ((content (await get-random))
-             (content2 (await get-random)))
-         (respond/ok req `(sxml (html (body (h1 "It worked!!!")
-                                            (pre ,content) (pre ,content2))))))))))
+       (let* ((count (let ((n (await get-random))) (if (integer? n) (modulo n 10) 1)))
+              (nums (let loop ((count count) (dest ()))
+                      (if (zero? count)
+                          dest
+                          (loop (- count 1)
+                                (cons (await get-random) dest))))))
+         (respond/ok req `(sxml (html (body (h1 "Random Numbers")
+                                            ,@(map (^n `(pre ,(x->string n))) nums)
+                                            )))))))))

@@ -29,7 +29,7 @@
     (lambda ()
       (let loop ()
         (let ((task (dequeue/wait! *task-queue*)))
-          (task)
+          (task)                        ; task may return multiple times!
           (flush))
         (loop))))))
 
