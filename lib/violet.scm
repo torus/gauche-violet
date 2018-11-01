@@ -8,11 +8,9 @@
   (use gauche.threads)
   (use gauche.connection)
 
-  ;; (add-load-path "./gauche-rheingau/lib/")
-  ;; (use rheingau)
-  ;; (rheingau-use kaheka)
-  (add-load-path "./gosh-modules/makiki")
-  (use makiki)
+  (add-load-path "./gauche-rheingau/lib/")
+  (use rheingau)
+  (rheingau-use makiki)
 
   (export init on-read on-new-connection dequeue-response! enqueue-task!)
 )
