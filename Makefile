@@ -26,4 +26,4 @@ $(RHEINGAU):
 	git clone https://github.com/torus/gauche-rheingau.git $(RHEINGAU)
 
 clean:
-	rm -rf *.o $(TARGET) gosh-modules $(RHEINGAU) $(TARGET).dSYM
+	rm -rf *~ *.o $(TARGET) gosh-modules $(RHEINGAU) $(TARGET).dSYM
