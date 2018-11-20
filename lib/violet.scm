@@ -12,7 +12,8 @@
   (use rheingau)
   (rheingau-use makiki)
 
-  (export init on-read on-new-connection dequeue-response! enqueue-task!)
+  (export init on-read on-new-connection dequeue-response! enqueue-task!
+          violet-async)
 )
 
 (select-module violet)
@@ -29,7 +30,8 @@
     (lambda ()
       (let loop ()
         (let ((task (dequeue/wait! *task-queue*)))
-          (task)                        ; task may return multiple times!
+          (guard (exc [else (print exc)])
+                 (task))             ; task may return multiple times!
           (flush))
         (loop))))))
 
@@ -99,3 +101,23 @@
 (define (push-task! task)
   (inc! *task-id*)
   (enqueue! *response-queue* (cons *task-id* task)))
+
+;;;;;
+
+(define (await yield)
+  (^[proc]
+    (call/cc (lambda (cont)
+               (thread-start! 
+                (make-thread
+                 (^[]
+                   (let ((result 
+                          (guard (exc [else (x->string exc)])
+                                 (proc))))
+                     (enqueue-task! (^[] (cont result)))))))
+               (yield)))))
+
+(define (violet-async func)
+  (enqueue-task!
+   (^[]
+     (call/cc (lambda (yield)
+                (func (await yield)))))))

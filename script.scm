@@ -12,24 +12,6 @@
 ;; Application
 ;;
 
-(define (violet-await yield)
-  (^[proc]
-    (call/cc (lambda (cont)
-               (thread-start! 
-                (make-thread
-                 (^[]
-                   (let ((result 
-                          (guard (exc [else (x->string exc)])
-                                 (proc))))
-                     (enqueue-task! (^[] (cont result)))))))
-               (yield)))))
-
-(define (violet-async func)
-  (enqueue-task!
-   (^[]
-     (call/cc (lambda (yield)
-                (func (violet-await yield)))))))
-
 (define (get-random)
   (call-with-input-file "/dev/random"
     (^p
