@@ -22,13 +22,13 @@ Server runs on http://localhost:2222
 Requirements
 ------------
 
-* libgauche
+* libgauche (HEAD version is required)
 * libuv
 
 Depends on
 ----------
 
-* [Kaheka](https://github.com/torus/Gauche-makiki) -- Gauche makiki with virtual socket
+* [makiki](https://github.com/shirok/Gauche-makiki) -- a simple multithreaded http server
 * [Rheingau](https://github.com/torus/gauche-rheingau) -- a dumb package manager for Gauche
 
 References
