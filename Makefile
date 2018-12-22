@@ -5,7 +5,7 @@ LFLAGS=-luv $(LIBPATH) -lgauche-0.97
 LD_LIBRARY_PATH=$(shell gauche-config --sysarchdir)
 
 MAKIKI=gosh-modules/makiki
-RHEINGAU=gauche-rheingau
+RHEINGAU=./gauche-rheingau
 
 build: $(TARGET)
 
@@ -20,7 +20,7 @@ $(TARGET): main.c
 	$(CC) -g -I/usr/local/include -o $(TARGET) main.c $(CFLAGS) $(LFLAGS)
 
 $(MAKIKI): $(RHEINGAU)
-	gosh -I. $(RHEINGAU)/rheingau.scm install
+	$(RHEINGAU)/rh1 install
 
 $(RHEINGAU):
 	git clone https://github.com/torus/gauche-rheingau.git $(RHEINGAU)
