@@ -10,7 +10,8 @@ RHEINGAU=./gauche-rheingau
 build: $(TARGET)
 
 run: $(TARGET) $(MAKIKI)
-	LD_LIBRARY_PATH=$(LD_LIBRARY_PATH) ./$(TARGET)
+#	LD_LIBRARY_PATH=$(LD_LIBRARY_PATH) ./$(TARGET)
+	LD_LIBRARY_PATH=$(LD_LIBRARY_PATH) nodemon -e scm --ignore gosh-modules/ --ignore gauche-rheingau/ --exec ./$(TARGET)
 
 ## docker run --rm -p 2222:2222 -v$PWD:/code -w /code -t -i gauche-violet_gosh make debug
 debug: $(TARGET) $(MAKIKI)
