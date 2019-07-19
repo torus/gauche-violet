@@ -142,14 +142,22 @@ void handle_response(uv_idle_t* handle) {
     }
 }
 
-int main() {
+int main(int argc, char **argv) {
     loop = uv_default_loop();
 
     // Gauche
     Scm_Init(GAUCHE_SIGNATURE);
 
+    if (argc < 1) {
+        Scm_Printf(SCM_CURERR, "usage: %s infile\n", argv[0]);
+        Scm_Exit(1);
+    }
+
+    Scm_AddLoadPath(".", 0);
+    const char *infile = argv[1];
+
     ScmLoadPacket lpak;
-    if (Scm_Load("./script.scm", 0, &lpak) < 0) {
+    if (Scm_Load(infile, 0, &lpak) < 0) {
         error_exit(lpak.exception);
     }
 
