@@ -4,14 +4,14 @@ LIBPATH=$(shell gauche-config -L)
 LFLAGS=-luv $(LIBPATH) -lgauche-0.97
 LD_LIBRARY_PATH=$(shell gauche-config --sysarchdir)
 
-MAKIKI=gosh-modules/makiki
 RHEINGAU=./gauche-rheingau
 
 SCRIPT=script.scm
 
 build: $(TARGET)
 
-run: $(TARGET) $(MAKIKI)
+run: $(TARGET)
+	$(RHEINGAU)/rh1 install
 #	LD_LIBRARY_PATH=$(LD_LIBRARY_PATH) ./$(TARGET) $(SCRIPT)
 	LD_LIBRARY_PATH=$(LD_LIBRARY_PATH) nodemon -e scm --ignore gosh-modules/ --ignore gauche-rheingau/ --exec ./$(TARGET) $(SCRIPT)
 
@@ -21,9 +21,6 @@ debug: $(TARGET) $(MAKIKI)
 
 $(TARGET): main.c
 	$(CC) -g -I/usr/local/include -o $(TARGET) main.c $(CFLAGS) $(LFLAGS)
-
-$(MAKIKI): $(RHEINGAU)
-	$(RHEINGAU)/rh1 install
 
 $(RHEINGAU):
 	git clone https://github.com/torus/gauche-rheingau.git $(RHEINGAU)
