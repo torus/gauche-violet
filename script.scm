@@ -123,7 +123,7 @@
   (^[req app]
     (violet-async
      (^[await]
-       (let* ((count (let ((n (await get-random))) (if (integer? n) (modulo n 10) 1)))
+       (let* ((count (let ((n (await get-random))) (if (integer? n) (modulo n 5) 1)))
               (nums (let loop ((count count) (dest ()))
                       (if (zero? count)
                           dest
@@ -133,3 +133,5 @@
                                (sxml:sxml->html
                                 (create-page
                                  (map (^n `(pre ,(x->string n))) nums))))))))))
+
+(define-http-handler #/^\/static\// (file-handler))
