@@ -46,6 +46,9 @@
           ))
      (link (@ (rel "stylesheet") (href "/static/starter-template.css"))))
     (body
+     (div (@ (id "fb-root")) "")
+     (script (@ (async "async") (defer "defer") (crossorigin "anonymous")
+                (src "https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v3.3&appId=468063727261207&autoLogAppEvents=1")) "")
      (nav (@ (class "navbar navbar-expand-md navbar-dark bg-dark fixed-top"))
           (a (@ (href "#") (class "navbar-brand")) "Favorite Games")
           (button
@@ -89,6 +92,7 @@
      (main
       (@ (role "main") (class "container"))
       ,@children)
+     (script (@ (src "/static/script.js")) "")
      (script (@
               (src "https://code.jquery.com/jquery-3.3.1.slim.min.js")
               (integrity "sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo")
@@ -132,6 +136,16 @@
          (respond/ok req (cons "<!DOCTYPE html>"
                                (sxml:sxml->html
                                 (create-page
-                                 (map (^n `(pre ,(x->string n))) nums))))))))))
+                                 (map (^n `(pre ,(x->string n))) nums)
+
+                                 '(div (@ (class "fb-login-button")
+                                          (onlogin "onlogin")
+                                          (data-width "")
+                                          (data-size "large")
+                                          (data-button-type "continue_with")
+                                          (data-auto-logout-link "false")
+                                          (data-use-continue-as "false")))
+
+                                 )))))))))
 
 (define-http-handler #/^\/static\// (file-handler))
