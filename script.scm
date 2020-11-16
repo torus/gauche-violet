@@ -22,7 +22,7 @@
      (meta (@ (name "viewport") (content "width=device-width, initial-scale=1, shrink-to-fit=no")))
      (meta (@ (name "description") (content "")))
      (meta (@ (name "author") (content "Mark Otto, Jacob Thornton, and Bootstrap contributors")))
-     (title "Starter Template · Bootstrap")
+     (title "Gauche Violet Demo")
      (link (@
             (rel "stylesheet")
             (integrity "sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T")
@@ -50,7 +50,7 @@
      (script (@ (async "async") (defer "defer") (crossorigin "anonymous")
                 (src "https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v3.3&appId=468063727261207&autoLogAppEvents=1")) "")
      (nav (@ (class "navbar navbar-expand-md navbar-dark bg-dark fixed-top"))
-          (a (@ (href "#") (class "navbar-brand")) "Favorite Games")
+          (a (@ (href "#") (class "navbar-brand")) "Gauche Violet Demo")
           (button
            (@
             (type "button")
