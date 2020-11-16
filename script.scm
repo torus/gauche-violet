@@ -47,8 +47,6 @@
      (link (@ (rel "stylesheet") (href "/static/starter-template.css"))))
     (body
      (div (@ (id "fb-root")) "")
-     (script (@ (async "async") (defer "defer") (crossorigin "anonymous")
-                (src "https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v3.3&appId=468063727261207&autoLogAppEvents=1")) "")
      (nav (@ (class "navbar navbar-expand-md navbar-dark bg-dark fixed-top"))
           (a (@ (href "#") (class "navbar-brand")) "Gauche Violet Demo")
           (button
@@ -137,14 +135,6 @@
                                (sxml:sxml->html
                                 (create-page
                                  (map (^n `(pre ,(x->string n))) nums)
-
-                                 '(div (@ (class "fb-login-button")
-                                          (onlogin "onlogin")
-                                          (data-width "")
-                                          (data-size "large")
-                                          (data-button-type "continue_with")
-                                          (data-auto-logout-link "false")
-                                          (data-use-continue-as "false")))
 
                                  )))))))))
 
