@@ -8,7 +8,7 @@
   (use gauche.threads)
   (use gauche.connection)
 
-  (add-load-path "./gauche-rheingau/lib/")
+  (add-load-path "." :relative)
   (use rheingau)
   (rheingau-use makiki)
 
