@@ -111,8 +111,9 @@
   (slot-ref vsock 'addr))
 
 (define-method connection-close ((vsock <violet-socket>))
-  (when (ref vsock 'closed?)
-        (set! (ref vsock 'closed?) #t)))
+  (if (ref vsock 'closed?)
+	  (print #"double closing attempt: ~vsock")
+      (set! (ref vsock 'closed?) #t)))
 
 (define-method connection-shutdown ((vsock <violet-socket>) param)
   ;; Not sure what should be done here??
