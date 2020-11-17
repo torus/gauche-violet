@@ -54,6 +54,7 @@
   (let ((vsock (hash-table-get *client-vsock-table* client)))
 	(dec-writes! vsock)
 	(when (and (ref vsock 'closed?) (zero? (slot-ref vsock 'remaining-writes)))
+	  (hash-table-delete! *client-vsock-table* client)
 	  (close-stream vsock))))
 
 (define (make-output-port client)
