@@ -12,7 +12,8 @@
   (use rheingau)
   (rheingau-use makiki)
 
-  (export init on-read on-new-connection dequeue-response! enqueue-task!
+  (export init on-read on-new-connection on-write-done
+		  dequeue-response! enqueue-task!
           violet-async)
 )
 
@@ -44,21 +45,38 @@
 (define (on-new-connection)
   )
 
+(define *client-vsock-table* (make-hash-table))
+
+(define (close-stream vsock)
+  (push-task! `(close ,(slot-ref vsock 'client))))
+
+(define (on-write-done client)
+  (let ((vsock (hash-table-get *client-vsock-table* client)))
+	(dec-writes! vsock)
+	(when (and (ref vsock 'closed?) (zero? (slot-ref vsock 'remaining-writes)))
+	  (close-stream vsock))))
+
 (define (make-output-port client)
   (define (respond-to-client str)
+	(inc-writes! (hash-table-get *client-vsock-table* client))
     (push-task! `(res ,client ,str)))
   (define (close)
     ;; Do nothing here. The socket will be closed after all the tasks are done.
     )
   (make <virtual-output-port> :puts respond-to-client :close close))
 
+(define (add-vsock! client iport)
+  (let ((vsock (make <violet-socket>
+				 :client client
+				 :input-port iport
+				 :output-port (make-output-port client))))
+	(hash-table-put! *client-vsock-table* client vsock)
+	vsock))
+
 (define (on-read client buf)
   (let* ([iport (open-input-string buf)]
-         [vsock (make <violet-socket>
-                  :client client
-                  :input-port iport
-                  :output-port (make-output-port client)
-                  )])
+         [vsock (or (hash-table-get *client-vsock-table* client #f)
+					(add-vsock! client iport))])
     (enqueue-task! (lambda ()
                      (with-module makiki (handle-client #f vsock))))
     ))
@@ -68,12 +86,18 @@
    (input-port :init-value #f :init-keyword :input-port)
    (output-port :init-value #f :init-keyword :output-port)
    (addr :init-value (car (make-sockaddrs "localhost" 2222)))
-   (closed? :init-value #f))
-)
+   (closed? :init-value #f)
+   (remaining-writes :init-value 0)))
 
 
 ;; (define-generic connection-address-name)
 ;; (define-method connection-address-name ((a <string>)) a)
+
+(define-method inc-writes! ((vsock <violet-socket>))
+  (inc! (slot-ref vsock 'remaining-writes)))
+
+(define-method dec-writes! ((vsock <violet-socket>))
+  (dec! (slot-ref vsock 'remaining-writes)))
 
 (define-method connection-input-port ((vsock <violet-socket>))
   (slot-ref vsock 'input-port))
@@ -86,12 +110,8 @@
   (slot-ref vsock 'addr))
 
 (define-method connection-close ((vsock <violet-socket>))
-  (if (ref vsock 'closed?)
-      (print #`"double closing attempted: ,vsock")
-      (begin
-        (set! (ref vsock 'closed?) #t)
-        (push-task! `(close ,(slot-ref vsock 'client)))))
-  )
+  (when (ref vsock 'closed?)
+        (set! (ref vsock 'closed?) #t)))
 
 (define-method connection-shutdown ((vsock <violet-socket>) param)
   ;; Not sure what should be done here??

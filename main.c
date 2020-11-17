@@ -35,6 +35,7 @@ struct sockaddr_in addr;
 typedef struct {
     uv_write_t req;
     uv_buf_t buf;
+	uv_stream_t *client;
 } write_req_t;
 
 void free_write_req(uv_write_t *req) {
@@ -43,13 +44,21 @@ void free_write_req(uv_write_t *req) {
     free(wr);
 }
 
+ScmObj write_done_proc = SCM_UNDEFINED;
+
 void echo_write(uv_write_t *req, int status) {
     if (status) {
         Scm_Printf(SCM_CURERR, "Write error %s\n", uv_strerror(status));
     }
 
     write_req_t *wr = (write_req_t*)req;
+	uv_stream_t *client = wr->client;
     free_write_req(req);
+
+	ScmEvalPacket epak;
+	if (Scm_Apply(write_done_proc, SCM_LIST1(SCM_MAKE_INT(client)), &epak) < 0) {
+		error_exit(epak.exception);
+	}
 }
 
 ScmObj read_proc = SCM_UNDEFINED;
@@ -126,6 +135,7 @@ void handle_response(uv_idle_t* handle) {
                 char *string = (char*)malloc(size);
                 memcpy(string, SCM_STRING_BODY_START(content), size);
                 req->buf = uv_buf_init(string, size);
+				req->client = client;
                 uv_write((uv_write_t*) req, client, &req->buf, 1, echo_write);
             } else if (!strcmp("close", tag)) {
                 uv_stream_t *client = (uv_stream_t*)SCM_INT_VALUE(SCM_CAR(body));
@@ -166,6 +176,7 @@ int main(int argc, char **argv) {
     SCM_BIND_PROC(init_proc,             "init",              Scm_CurrentModule());
     SCM_BIND_PROC(new_conn_proc,         "on-new-connection", Scm_CurrentModule());
     SCM_BIND_PROC(read_proc,             "on-read",           Scm_CurrentModule());
+    SCM_BIND_PROC(write_done_proc,       "on-write-done",     Scm_CurrentModule());
     SCM_BIND_PROC(dequeue_response_proc, "dequeue-response!", Scm_CurrentModule());
 
     ScmEvalPacket epak;
