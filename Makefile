@@ -6,7 +6,7 @@ LD_LIBRARY_PATH=$(shell gauche-config --sysarchdir)
 
 RHEINGAU=./gauche-rheingau
 
-SCRIPT=script.scm
+SCRIPT=eg/random.scm
 
 build: $(TARGET)
 
