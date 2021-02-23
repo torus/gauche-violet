@@ -1,7 +1,6 @@
 TARGET=violet
-CFLAGS=$(shell gauche-config -I)
-LIBPATH=$(shell gauche-config -L)
-LFLAGS=-luv $(LIBPATH) -lgauche-0.97
+CFLAGS=$(shell gauche-config -I) $(shell pkg-config --cflags libuv)
+LDFLAGS=$(shell gauche-config -l) $(shell pkg-config --libs libuv)
 LD_LIBRARY_PATH=$(shell gauche-config --sysarchdir)
 
 RHEINGAU=./gauche-rheingau
@@ -20,7 +19,7 @@ debug: $(TARGET) $(MAKIKI)
 	gdb -ex run $(TARGET)
 
 $(TARGET): main.c
-	$(CC) -g -I/usr/local/include -o $(TARGET) main.c $(CFLAGS) $(LFLAGS)
+	$(CC) -g -I/usr/local/include -o $(TARGET) main.c $(CFLAGS) $(LDFLAGS)
 
 $(RHEINGAU):
 	git clone https://github.com/torus/gauche-rheingau.git $(RHEINGAU)
