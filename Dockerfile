@@ -9,4 +9,4 @@ RUN apt-get install -y nodejs
 RUN npm install -g nodemon
 
 WORKDIR /code
-CMD make run
+CMD make -f docker.mk run

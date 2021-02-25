@@ -1,28 +1,65 @@
-TARGET=violet
-CFLAGS=$(shell gauche-config -I) $(shell pkg-config --cflags libuv)
-LDFLAGS=$(shell gauche-config -l) $(shell pkg-config --libs libuv)
-LD_LIBRARY_PATH=$(shell gauche-config --sysarchdir)
+# violet - Web server based on Gauche and Libuv
+# See LICENSE file for copyright and license details.
+
+# mostly copied from: https://git.suckless.org/surf/log.html
+
+include config.mk
+
+SRC = main.c
+OBJ = $(SRC:.c=.o)
 
 RHEINGAU=./gauche-rheingau
 
-SCRIPT=eg/random.scm
+all: options violet $(WLIB)
 
-build: $(TARGET)
+options:
+	@echo violet build options:
+	@echo "CC            = $(CC)"
+	@echo "CFLAGS        = $(VIOLETCFLAGS) $(CFLAGS)"
+	@echo "LDFLAGS       = $(LDFLAGS) $(LIBS)"
 
-run: $(TARGET) $(RHEINGAU)
-	$(RHEINGAU)/rh1 install
-#	LD_LIBRARY_PATH=$(LD_LIBRARY_PATH) ./$(TARGET) $(SCRIPT)
-	LD_LIBRARY_PATH=$(LD_LIBRARY_PATH) nodemon -e scm --ignore gosh-modules/ --ignore gauche-rheingau/ --exec ./$(TARGET) $(SCRIPT)
-
-## docker run --rm -p 2222:2222 -v$PWD:/code -w /code -t -i gauche-violet_gosh make debug
-debug: $(TARGET) $(MAKIKI)
-	gdb -ex run $(TARGET)
-
-$(TARGET): main.c
-	$(CC) -g -I/usr/local/include -o $(TARGET) main.c $(CFLAGS) $(LDFLAGS)
+violet: $(OBJ)
+	$(CC) $(LDFLAGS) -o $@ $(OBJ) $(LIBS)
 
 $(RHEINGAU):
 	git clone https://github.com/torus/gauche-rheingau.git $(RHEINGAU)
 
+$(OBJ) $(WOBJ): config.mk
+
+config.h:
+	cp config.def.h $@
+
+$(OBJ): $(SRC)
+	$(CC) $(VIOLETCFLAGS) $(CFLAGS) -c $(SRC)
+
 clean:
-	rm -rf *~ *.o $(TARGET) gosh-modules $(RHEINGAU) $(TARGET).dSYM
+	rm -f violet $(OBJ)
+	rm -rf *~ *.o gosh-modules $(RHEINGAU) $(TARGET).dSYM
+
+distclean: clean
+	rm -f config.h violet-$(VERSION).tar.gz
+
+dist: distclean
+	mkdir -p violet-$(VERSION)
+	cp -R LICENSE Makefile config.mk config.def.h README \
+	    violet.1 $(SRC) violet-$(VERSION)
+	tar -cf violet-$(VERSION).tar violet-$(VERSION)
+	gzip violet-$(VERSION).tar
+	rm -rf violet-$(VERSION)
+
+install: all
+	mkdir -p $(DESTDIR)$(PREFIX)/bin
+	cp -f violet $(DESTDIR)$(PREFIX)/bin
+	chmod 755 $(DESTDIR)$(PREFIX)/bin/violet
+	mkdir -p $(DESTDIR)$(LIBDIR)
+	cp -f lib/violet.scm $(DESTDIR)$(LIBDIR)
+	mkdir -p $(DESTDIR)$(MANPREFIX)/man1
+	sed "s/VERSION/$(VERSION)/g" < violet.1 > $(DESTDIR)$(MANPREFIX)/man1/violet.1
+	chmod 644 $(DESTDIR)$(MANPREFIX)/man1/violet.1
+
+uninstall:
+	rm -f $(DESTDIR)$(PREFIX)/bin/violet
+	rm -f $(DESTDIR)$(MANPREFIX)/man1/violet.1
+	rm -Rf $(DESTDIR)$(LIBDIR)
+
+.PHONY: all options distclean clean dist install uninstall
