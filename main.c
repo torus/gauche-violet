@@ -35,7 +35,7 @@ struct sockaddr_in addr;
 typedef struct {
     uv_write_t req;
     uv_buf_t buf;
-	uv_stream_t *client;
+    uv_stream_t *client;
 } write_req_t;
 
 void free_write_req(uv_write_t *req) {
@@ -52,13 +52,13 @@ void echo_write(uv_write_t *req, int status) {
     }
 
     write_req_t *wr = (write_req_t*)req;
-	uv_stream_t *client = wr->client;
+    uv_stream_t *client = wr->client;
     free_write_req(req);
 
-	ScmEvalPacket epak;
-	if (Scm_Apply(write_done_proc, SCM_LIST1(SCM_MAKE_INT(client)), &epak) < 0) {
-		error_exit(epak.exception);
-	}
+    ScmEvalPacket epak;
+    if (Scm_Apply(write_done_proc, SCM_LIST1(SCM_MAKE_INT(client)), &epak) < 0) {
+        error_exit(epak.exception);
+    }
 }
 
 ScmObj read_proc = SCM_UNDEFINED;
@@ -66,8 +66,10 @@ ScmObj read_proc = SCM_UNDEFINED;
 void echo_read(uv_stream_t *client, ssize_t nread, const uv_buf_t *buf) {
     if (nread > 0) {
         ScmEvalPacket epak;
-        if (Scm_Apply(read_proc, SCM_LIST2(SCM_MAKE_INT(client),
-                                           Scm_MakeString(buf->base, nread, -1, 0)), &epak) < 0) {
+        if (Scm_Apply(read_proc, SCM_LIST2(
+                          SCM_MAKE_INT(client),
+                          Scm_MakeString(buf->base, nread, -1, 0)),
+                      &epak) < 0) {
             error_exit(epak.exception);
         }
 
@@ -123,7 +125,8 @@ void handle_response(uv_idle_t* handle) {
             // (id 'close client)
             long id = SCM_INT_VALUE(SCM_CAR(result));
             const char *tag =
-                SCM_STRING_BODY_START(SCM_STRING_BODY(SCM_SYMBOL_NAME(SCM_CADR(result))));
+                SCM_STRING_BODY_START(
+                    SCM_STRING_BODY(SCM_SYMBOL_NAME(SCM_CADR(result))));
             ScmObj body = SCM_CDDR(result);
 
             if (!strcmp("res", tag)) {
@@ -135,7 +138,7 @@ void handle_response(uv_idle_t* handle) {
                 char *string = (char*)malloc(size);
                 memcpy(string, SCM_STRING_BODY_START(content), size);
                 req->buf = uv_buf_init(string, size);
-				req->client = client;
+                req->client = client;
                 uv_write((uv_write_t*) req, client, &req->buf, 1, echo_write);
             } else if (!strcmp("close", tag)) {
                 uv_stream_t *client = (uv_stream_t*)SCM_INT_VALUE(SCM_CAR(body));
@@ -203,6 +206,7 @@ int main(int argc, char **argv) {
         Scm_Printf(SCM_CURERR, "Listen error %s\n", uv_strerror(r));
         return 1;
     }
-    Scm_Printf(SCM_CURERR, "%s: starting server on port %d\n", __FUNCTION__, DEFAULT_PORT);
+    Scm_Printf(SCM_CURERR, "%s: starting server on port %d\n",
+               __FUNCTION__, DEFAULT_PORT);
     return uv_run(loop, UV_RUN_DEFAULT);
 }
