@@ -34,15 +34,16 @@ $(OBJ): $(SRC)
 
 clean:
 	rm -f violet $(OBJ)
-	rm -rf *~ *.o gosh-modules $(RHEINGAU) $(TARGET).dSYM
+	rm -rf */*~ *~ *.o gosh-modules $(RHEINGAU) $(TARGET).dSYM
 
 distclean: clean
 	rm -f config.h violet-$(VERSION).tar.gz
 
 dist: distclean
 	mkdir -p violet-$(VERSION)
-	cp -R LICENSE Makefile config.mk config.def.h README \
-	    violet.1 $(SRC) violet-$(VERSION)
+	cp -R Dockerfile Makefile README.md barrel.scm config.mk	\
+	    docker-compose.yml docker.mk eg lib static violet.1		\
+	    $(SRC) violet-$(VERSION)
 	tar -cf violet-$(VERSION).tar violet-$(VERSION)
 	gzip violet-$(VERSION).tar
 	rm -rf violet-$(VERSION)
@@ -60,6 +61,7 @@ install: all
 uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/violet
 	rm -f $(DESTDIR)$(MANPREFIX)/man1/violet.1
-	rm -Rf $(DESTDIR)$(LIBDIR)
+	rm -f $(DESTDIR)$(LIBDIR)/violet.scm
+	rmdir -f $(DESTDIR)$(LIBDIR)
 
 .PHONY: all options distclean clean dist install uninstall
