@@ -18,14 +18,8 @@ run: install
 debug: $(TARGET) $(MAKIKI)
 	gdb -ex run $(TARGET)
 
-install: $(TARGET) $(RHEINGAU)
+install:
 	$(MAKE) install
-
-$(TARGET):
-	$(MAKE) $@
-
-$(RHEINGAU):
-	$(MAKE) $@
 
 clean:
 	rm -rf *~ *.o $(TARGET) gosh-modules $(RHEINGAU) $(TARGET).dSYM
