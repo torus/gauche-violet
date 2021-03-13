@@ -54,6 +54,8 @@ install: all
 	chmod 755 $(DESTDIR)$(PREFIX)/bin/violet
 	mkdir -p $(DESTDIR)$(LIBDIR)
 	cp -f lib/violet.scm $(DESTDIR)$(LIBDIR)
+	cp -f gauche-rheingau/lib/* $(DESTDIR)$(LIBDIR)
+	sed "s|@LIBDIR@|$(LIBDIR)|" gauche-rheingau/rh1 > $(DESTDIR)$(PREFIX)/bin/rh1
 	mkdir -p $(DESTDIR)$(MANPREFIX)/man1
 	sed "s/VERSION/$(VERSION)/g" < violet.1 > $(DESTDIR)$(MANPREFIX)/man1/violet.1
 	chmod 644 $(DESTDIR)$(MANPREFIX)/man1/violet.1

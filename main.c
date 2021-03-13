@@ -166,10 +166,15 @@ int main(int argc, char **argv) {
         Scm_Exit(1);
     }
 
+    Scm_AddLoadPath(LIBDIR, 0);
+    ScmLoadPacket lpak;
+    if (Scm_Load("violet", 0, &lpak) < 0) {
+        error_exit(lpak.exception);
+    }
+
     Scm_AddLoadPath(".", 0);
     const char *infile = argv[1];
 
-    ScmLoadPacket lpak;
     if (Scm_Load(infile, 0, &lpak) < 0) {
         error_exit(lpak.exception);
     }
