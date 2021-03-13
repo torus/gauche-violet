@@ -54,11 +54,11 @@ install: all
 	chmod 755 $(DESTDIR)$(PREFIX)/bin/violet
 	mkdir -p $(DESTDIR)$(LIBDIR)
 	cp -f lib/violet.scm $(DESTDIR)$(LIBDIR)
-	cd gauche-rheingau && ./configure
-	$(MAKE) -C gauche-rheingau install
 	mkdir -p $(DESTDIR)$(MANPREFIX)/man1
 	sed "s/VERSION/$(VERSION)/g" < violet.1 > $(DESTDIR)$(MANPREFIX)/man1/violet.1
 	chmod 644 $(DESTDIR)$(MANPREFIX)/man1/violet.1
+	cd $(RHEINGAU) && ./configure
+	$(MAKE) -C $(RHEINGAU) install
 
 uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/violet

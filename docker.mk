@@ -12,7 +12,8 @@ build: $(TARGET)
 run: install
 	rh1 install
 #	LD_LIBRARY_PATH=$(LD_LIBRARY_PATH) ./$(TARGET) $(SCRIPT)
-	LD_LIBRARY_PATH=$(LD_LIBRARY_PATH) nodemon -e scm --ignore gosh-modules/ --ignore gauche-rheingau/ --exec $(TARGET) $(SCRIPT)
+	nodemon -e scm --ignore gosh-modules/ --ignore gauche-rheingau/ --exec $(TARGET) $(SCRIPT)
+	# LD_LIBRARY_PATH=$(LD_LIBRARY_PATH) nodemon -e scm --ignore gosh-modules/ --ignore gauche-rheingau/ --exec $(TARGET) $(SCRIPT)
 
 ## docker run --rm -p 2222:2222 -v$PWD:/code -w /code -t -i gauche-violet_gosh make debug
 debug: $(TARGET) $(MAKIKI)
