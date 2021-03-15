@@ -166,26 +166,28 @@ int main(int argc, char **argv) {
         Scm_Exit(1);
     }
 
-    Scm_AddLoadPath(LIBDIR, 0);
     ScmLoadPacket lpak;
+    Scm_AddLoadPath(LIBDIR, 0);
     if (Scm_Load("violet", 0, &lpak) < 0) {
         error_exit(lpak.exception);
     }
+    ScmModule *violet_mod = SCM_FIND_MODULE("violet", 0);
 
     Scm_AddLoadPath(".", 0);
     const char *infile = argv[1];
-
     if (Scm_Load(infile, 0, &lpak) < 0) {
         error_exit(lpak.exception);
     }
 
-    ScmObj init_proc = SCM_UNDEFINED;
 
-    SCM_BIND_PROC(init_proc,             "init",              Scm_CurrentModule());
-    SCM_BIND_PROC(new_conn_proc,         "on-new-connection", Scm_CurrentModule());
-    SCM_BIND_PROC(read_proc,             "on-read",           Scm_CurrentModule());
-    SCM_BIND_PROC(write_done_proc,       "on-write-done",     Scm_CurrentModule());
-    SCM_BIND_PROC(dequeue_response_proc, "dequeue-response!", Scm_CurrentModule());
+    ScmObj init_proc = SCM_UNDEFINED;
+    ScmModule *mod = Scm_CurrentModule();
+
+    SCM_BIND_PROC(init_proc,             "violet-init",              violet_mod);
+    SCM_BIND_PROC(new_conn_proc,         "violet-on-new-connection", violet_mod);
+    SCM_BIND_PROC(read_proc,             "violet-on-read",           violet_mod);
+    SCM_BIND_PROC(write_done_proc,       "violet-on-write-done",     violet_mod);
+    SCM_BIND_PROC(dequeue_response_proc, "violet-dequeue-response!", violet_mod);
 
     ScmEvalPacket epak;
     if (Scm_Apply(init_proc, SCM_NIL, &epak) < 0) {

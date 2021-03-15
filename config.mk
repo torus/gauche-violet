@@ -1,5 +1,5 @@
 # Violet version
-VERSION = 1.0
+VERSION = 0.1.0
 
 # paths
 PREFIX = /usr/local
@@ -19,3 +19,4 @@ LIBS = $(GAUCHELIB) $(UVLIB)
 # flags
 CFLAGS = -DVERSION=\"$(VERSION)\" -DLIBPREFIX=\"$(LIBPREFIX)\" -DLIBDIR=\"$(LIBDIR)\"
 VIOLETCFLAGS = $(INCS)
+MAKIKI = $(LIBDIR)/makiki.scm

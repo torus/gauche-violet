@@ -8,21 +8,17 @@ include config.mk
 SRC = main.c
 OBJ = $(SRC:.c=.o)
 
-RHEINGAU=./gauche-rheingau
-
-all: options violet $(RHEINGAU)
+all: options violet
 
 options:
 	@echo violet build options:
 	@echo "CC            = $(CC)"
 	@echo "CFLAGS        = $(VIOLETCFLAGS) $(CFLAGS)"
 	@echo "LDFLAGS       = $(LDFLAGS) $(LIBS)"
+	@echo "MAKIKI        = $(MAKIKI)"
 
 violet: $(OBJ)
 	$(CC) $(LDFLAGS) -o $@ $(OBJ) $(LIBS)
-
-$(RHEINGAU):
-	git clone https://github.com/torus/gauche-rheingau.git $(RHEINGAU)
 
 $(OBJ) $(WOBJ): config.mk
 
@@ -34,7 +30,7 @@ $(OBJ): $(SRC)
 
 clean:
 	rm -f violet $(OBJ)
-	rm -rf */*~ *~ *.o gosh-modules $(RHEINGAU) $(TARGET).dSYM
+	rm -rf */*~ *~ *.o gosh-modules $(TARGET).dSYM
 
 distclean: clean
 	rm -f config.h violet-$(VERSION).tar.gz
@@ -48,22 +44,24 @@ dist: distclean
 	gzip violet-$(VERSION).tar
 	rm -rf violet-$(VERSION)
 
-install: all
-	mkdir -p $(DESTDIR)$(PREFIX)/bin
-	cp -f violet $(DESTDIR)$(PREFIX)/bin
-	chmod 755 $(DESTDIR)$(PREFIX)/bin/violet
-	mkdir -p $(DESTDIR)$(LIBDIR)
-	cp -f lib/violet.scm $(DESTDIR)$(LIBDIR)
-	mkdir -p $(DESTDIR)$(MANPREFIX)/man1
-	sed "s/VERSION/$(VERSION)/g" < violet.1 > $(DESTDIR)$(MANPREFIX)/man1/violet.1
-	chmod 644 $(DESTDIR)$(MANPREFIX)/man1/violet.1
-	cd $(RHEINGAU) && ./configure
-	$(MAKE) -C $(RHEINGAU) install
+install: all $(MAKIKI)
+	mkdir -p $(PREFIX)/bin
+	cp -f violet $(PREFIX)/bin
+	chmod 755 $(PREFIX)/bin/violet
+	mkdir -p $(LIBDIR)
+	cp -f lib/violet.scm $(LIBDIR)
+	mkdir -p $(MANPREFIX)/man1
+	sed "s/VERSION/$(VERSION)/g" < violet.1 > $(MANPREFIX)/man1/violet.1
+	chmod 644 $(MANPREFIX)/man1/violet.1
+
+$(MAKIKI):
+	mkdir -p $(LIBDIR)
+	curl -o $@ https://raw.githubusercontent.com/shirok/Gauche-makiki/use-connection/makiki.scm
 
 uninstall:
-	rm -f $(DESTDIR)$(PREFIX)/bin/violet
-	rm -f $(DESTDIR)$(MANPREFIX)/man1/violet.1
-	rm -f $(DESTDIR)$(LIBDIR)/violet.scm
-	rmdir -f $(DESTDIR)$(LIBDIR)
+	rm -f $(PREFIX)/bin/violet
+	rm -f $(MANPREFIX)/man1/violet.1
+	rm -f $(LIBDIR)/violet.scm
+	rmdir -f $(LIBDIR)
 
 .PHONY: all options distclean clean dist install uninstall

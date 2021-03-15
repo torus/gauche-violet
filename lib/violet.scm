@@ -8,12 +8,13 @@
   (use gauche.threads)
   (use gauche.connection)
 
-  (add-load-path "." :relative)
-  (use rheingau)
-  (rheingau-use makiki)
+  (use makiki)
 
-  (export init on-read on-new-connection on-write-done
-		  dequeue-response! enqueue-task!
+  (export violet-init
+          violet-on-read
+          violet-on-new-connection
+          violet-on-write-done
+          violet-dequeue-response!
           violet-async)
 )
 
@@ -24,7 +25,7 @@
 (define (enqueue-task! proc)
   (enqueue! *task-queue* proc))
 
-(define (init)
+(define (violet-init)
   (print "Starting worker thread.")
   (thread-start!
    (make-thread
@@ -38,11 +39,11 @@
 
 (define *response-queue* (make-queue))
 
-(define (dequeue-response!)
+(define (violet-dequeue-response!)
   (dequeue! *response-queue* #f)
   )
 
-(define (on-new-connection)
+(define (violet-on-new-connection)
   )
 
 (define *client-vsock-table* (make-hash-table))
@@ -50,7 +51,7 @@
 (define (close-stream vsock)
   (push-task! `(close ,(slot-ref vsock 'client))))
 
-(define (on-write-done client)
+(define (violet-on-write-done client)
   (let ((vsock (hash-table-get *client-vsock-table* client)))
 	(dec-writes! vsock)
 	(when (and (ref vsock 'closed?) (zero? (slot-ref vsock 'remaining-writes)))
@@ -74,7 +75,7 @@
 	(hash-table-put! *client-vsock-table* client vsock)
 	vsock))
 
-(define (on-read client buf)
+(define (violet-on-read client buf)
   (let* ([iport (open-input-string buf)]
          [vsock (or (hash-table-get *client-vsock-table* client #f)
 					(add-vsock! client iport))])
