@@ -114,6 +114,20 @@ void on_new_connection(uv_stream_t *server, int status) {
 
 ScmObj dequeue_response_proc = SCM_UNDEFINED;
 
+void write_response(ScmObj body)
+{
+    uv_stream_t *client = (uv_stream_t*)SCM_INT_VALUE(SCM_CAR(body));
+    const ScmStringBody* content = SCM_STRING_BODY(SCM_CADR(body));
+    write_req_t *req = (write_req_t*) malloc(sizeof(write_req_t));
+    int size = SCM_STRING_BODY_SIZE(content);
+    char *string = (char*)malloc(size);
+
+    memcpy(string, SCM_STRING_BODY_START(content), size);
+    req->buf = uv_buf_init(string, size);
+    req->client = client;
+    uv_write((uv_write_t*) req, client, &req->buf, 1, echo_write);
+}
+
 void handle_response(uv_idle_t* handle) {
     while (1) {
         ScmEvalPacket epak;
@@ -131,19 +145,9 @@ void handle_response(uv_idle_t* handle) {
             ScmObj body = SCM_CDDR(result);
 
             if (!strcmp("res", tag)) {
-                uv_stream_t *client = (uv_stream_t*)SCM_INT_VALUE(SCM_CAR(body));
-                const ScmStringBody* content = SCM_STRING_BODY(SCM_CADR(body));
-
-                write_req_t *req = (write_req_t*) malloc(sizeof(write_req_t));
-                int size = SCM_STRING_BODY_SIZE(content);
-                char *string = (char*)malloc(size);
-                memcpy(string, SCM_STRING_BODY_START(content), size);
-                req->buf = uv_buf_init(string, size);
-                req->client = client;
-                uv_write((uv_write_t*) req, client, &req->buf, 1, echo_write);
+                write_response(body);
             } else if (!strcmp("close", tag)) {
                 uv_stream_t *client = (uv_stream_t*)SCM_INT_VALUE(SCM_CAR(body));
-                /* Scm_Printf(SCM_CURERR, "close: %S\n", body); */
                 uv_close((uv_handle_t*)client, NULL);
             } else {
                 Scm_Printf(SCM_CURERR, "handle_response: unknown tag %s\n", tag);
