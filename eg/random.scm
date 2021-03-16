@@ -58,31 +58,11 @@
           (div (@ (id "navbarsExampleDefault") (class "collapse navbar-collapse"))
                (ul (@ (class "navbar-nav mr-auto"))
                    (li (@ (class "nav-item active"))
-                       (a (@ (href "#") (class "nav-link"))
-                          "Home " (span (@ (class "sr-only")) "(current)")))
-                   (li (@ (class "nav-item")) (a (@ (href "#") (class "nav-link")) "Link"))
+                       (a (@ (href "/") (class "nav-link"))
+                          "Home "))
                    (li (@ (class "nav-item"))
-                       (a (@
-                           (tabindex "-1") (href "#") (class "nav-link disabled")
-                           (aria-disabled "true"))
-                          "Disabled"))
-                   (li (@ (class "nav-item dropdown"))
-                       (a (@ (id "dropdown01") (href "#")
-                             (data-toggle "dropdown")
-                             (class "nav-link dropdown-toggle")
-                             (aria-haspopup "true")
-                             (aria-expanded "false"))
-                          "Dropdown")
-                       (div (@ (class "dropdown-menu") (aria-labelledby "dropdown01"))
-                            (a (@ (href "#") (class "dropdown-item")) "Action")
-                            (a (@ (href "#") (class "dropdown-item")) "Another action")
-                            (a (@ (href "#") (class "dropdown-item")) "Something else here"))))
-               (form
-                (@ (class "form-inline my-2 my-lg-0"))
-                (input (@ (type "text") (placeholder "Search") (class "form-control mr-sm-2")
-                          (aria-label "Search")))
-                (button (@ (type "submit") (class "btn btn-secondary my-2 my-sm-0"))
-                        "Search"))))
+                       (a (@ (href "/static/") (class "nav-link"))
+                          "Static")))))
      (main
       (@ (role "main") (class "container"))
       ,@children)
@@ -104,8 +84,6 @@
              "")))
   )
 
-
-
 (define (get-random)
   (call-with-input-file "/dev/random"
     (^p
@@ -121,7 +99,8 @@
   (^[req app]
     (violet-async
      (^[await]
-       (let* ((count (let ((n (await get-random))) (if (integer? n) (modulo n 5) 1)))
+       (let* ((count (let ((n (await get-random)))
+                       (if (integer? n) (+ 3(modulo n 5)) 1)))
               (nums (let loop ((count count) (dest ()))
                       (if (zero? count)
                           dest
@@ -130,8 +109,10 @@
          (respond/ok req (cons "<!DOCTYPE html>"
                                (sxml:sxml->html
                                 (create-page
-                                 (map (^n `(pre ,(x->string n))) nums)
-
+                                 '(h1 "Here are some numbers from /dev/random:")
+                                 `(table (@ (class "table"))
+                                         ,@(map (^n `(tr (td ,(x->string n))))
+                                                nums))
                                  )))))))))
 
 (define-http-handler #/^\/static\// (file-handler))

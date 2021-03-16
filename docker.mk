@@ -4,18 +4,20 @@ LDFLAGS=$(shell gauche-config -l) $(shell pkg-config --libs libuv)
 LD_LIBRARY_PATH=$(shell gauche-config --sysarchdir)
 
 SCRIPT_DIR = eg
-# SCRIPT = random.scm
-SCRIPT = basic.scm
+SCRIPT = random.scm
+# SCRIPT = basic.scm
 
 run:
 	$(TARGET) $(SCRIPT_DIR)/$(SCRIPT)
 
-run-local:
-	$(MAKE) LIBDIR=../lib/ LDFLAGS=-g
-	cd eg && ../$(TARGET) random.scm
+build-local:
+	$(MAKE) LIBDIR=../lib/ #LDFLAGS=-g
 
-run-nodemon:
-	nodemon -e scm --ignore gosh-modules/ --ignore gauche-rheingau/ --exec $(TARGET) $(SCRIPT_DIR)/$(SCRIPT)
+run-local: build-local
+	cd $(SCRIPT_DIR) && ../$(TARGET) $(SCRIPT)
+
+run-local-nodemon: build-local
+	cd $(SCRIPT_DIR) && nodemon -e scm --exec ../$(TARGET) $(SCRIPT)
 
 install:
 	$(MAKE) install
