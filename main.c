@@ -48,12 +48,14 @@ void free_write_req(uv_write_t *req) {
 ScmObj write_done_proc = SCM_UNDEFINED;
 
 void echo_write(uv_write_t *req, int status) {
-    if (status) {
-        Scm_Printf(SCM_CURERR, "Write error %s\n", uv_strerror(status));
-    }
-
     write_req_t *wr = (write_req_t*)req;
     uv_stream_t *client = wr->client;
+
+    if (status) {
+        Scm_Printf(SCM_CURERR, "Write error [client: %p] %s\n",
+                   wr->client, uv_strerror(status));
+    }
+
     free_write_req(req);
 
     ScmEvalPacket epak;
