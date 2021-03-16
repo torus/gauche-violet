@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <signal.h>
 
 #include <uv.h>
 
@@ -215,5 +216,14 @@ int main(int argc, char **argv) {
     }
     Scm_Printf(SCM_CURERR, "%s: starting server on port %d\n",
                __FUNCTION__, DEFAULT_PORT);
+
+    struct sigaction sa;
+    sa.sa_handler = SIG_IGN;
+    sa.sa_flags = 0;
+    if (sigaction(SIGPIPE, &sa, NULL) < 0) {
+        Scm_Printf(SCM_CURERR, "sigaction failed.");
+        Scm_Exit(1);
+    }
+
     return uv_run(loop, UV_RUN_DEFAULT);
 }
