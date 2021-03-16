@@ -10,6 +10,10 @@ SCRIPT = basic.scm
 run:
 	$(TARGET) $(SCRIPT_DIR)/$(SCRIPT)
 
+run-local:
+	$(MAKE) LIBDIR=../lib/ LDFLAGS=-g
+	cd eg && ../$(TARGET) random.scm
+
 run-nodemon:
 	nodemon -e scm --ignore gosh-modules/ --ignore gauche-rheingau/ --exec $(TARGET) $(SCRIPT_DIR)/$(SCRIPT)
 
