@@ -171,7 +171,6 @@ void setup_signal_handlers()
 
 int start_main_loop()
 {
-    // Main loop
     uv_idle_t idler;
 
     uv_idle_init(uv_default_loop(), &idler);
@@ -194,7 +193,7 @@ int start_main_loop()
     return uv_run(loop, UV_RUN_DEFAULT);
 }
 
-void init_violet_module()
+void load_violet_module()
 {
     ScmLoadPacket lpak;
     Scm_AddLoadPath(LIBDIR, 0);
@@ -211,35 +210,36 @@ void init_violet_module()
 
 }
 
-int main(int argc, char **argv) {
-    loop = uv_default_loop();
-
-    // Gauche
-    Scm_Init(GAUCHE_SIGNATURE);
+void load_script(int argc, char **argv) {
+    ScmLoadPacket lpak;
 
     if (argc < 1) {
         Scm_Printf(SCM_CURERR, "usage: %s infile\n", argv[0]);
         Scm_Exit(1);
     }
 
-    ScmLoadPacket lpak;
-
-    init_violet_module();
-
     Scm_AddLoadPath(".", 0);
     const char *infile = argv[1];
     if (Scm_Load(infile, 0, &lpak) < 0) {
         error_exit(lpak.exception);
     }
+}
 
+void init_violet() {
     ScmEvalPacket epak;
     if (Scm_Apply(init_proc, SCM_NIL, &epak) < 0) {
         error_exit(epak.exception);
     }
+}
 
-    uv_timer_init(loop, &timeout);
+int main(int argc, char **argv) {
+    loop = uv_default_loop();
 
+    Scm_Init(GAUCHE_SIGNATURE);
+    load_violet_module();
+    load_script(argc, argv);
+    init_violet();
     setup_signal_handlers();
-
+    uv_timer_init(loop, &timeout);
     return start_main_loop();
 }
