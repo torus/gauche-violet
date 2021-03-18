@@ -19,6 +19,11 @@ uv_loop_t *loop;
 uv_timer_t timeout;
 
 ScmObj result_proc = SCM_UNDEFINED;
+ScmObj init_proc = SCM_UNDEFINED;
+ScmObj dequeue_response_proc = SCM_UNDEFINED;
+ScmObj new_conn_proc = SCM_UNDEFINED;
+ScmObj read_proc = SCM_UNDEFINED;
+ScmObj write_done_proc = SCM_UNDEFINED;
 
 void error_exit(ScmObj c)
 {
@@ -45,8 +50,6 @@ void free_write_req(uv_write_t *req) {
     free(wr);
 }
 
-ScmObj write_done_proc = SCM_UNDEFINED;
-
 void echo_write(uv_write_t *req, int status) {
     write_req_t *wr = (write_req_t*)req;
     uv_stream_t *client = wr->client;
@@ -63,8 +66,6 @@ void echo_write(uv_write_t *req, int status) {
         error_exit(epak.exception);
     }
 }
-
-ScmObj read_proc = SCM_UNDEFINED;
 
 void echo_read(uv_stream_t *client, ssize_t nread, const uv_buf_t *buf) {
     if (nread > 0) {
@@ -91,8 +92,6 @@ void alloc_buffer(uv_handle_t *handle, size_t suggested_size, uv_buf_t *buf) {
     buf->len = suggested_size;
 }
 
-ScmObj new_conn_proc = SCM_UNDEFINED;
-
 void on_new_connection(uv_stream_t *server, int status) {
     if (status < 0) {
         Scm_Printf(SCM_CURERR, "New connection error %s\n", uv_strerror(status));
@@ -113,8 +112,6 @@ void on_new_connection(uv_stream_t *server, int status) {
         error_exit(epak.exception);
     }
 }
-
-ScmObj dequeue_response_proc = SCM_UNDEFINED;
 
 void write_response(ScmObj body)
 {
@@ -140,7 +137,6 @@ void handle_response(uv_idle_t* handle) {
         if (SCM_PAIRP(result)) {
             // (id 'res client "response")
             // (id 'close client)
-            long id = SCM_INT_VALUE(SCM_CAR(result));
             const char *tag =
                 SCM_STRING_BODY_START(
                     SCM_STRING_BODY(SCM_SYMBOL_NAME(SCM_CADR(result))));
@@ -162,47 +158,19 @@ void handle_response(uv_idle_t* handle) {
     }
 }
 
-int main(int argc, char **argv) {
-    loop = uv_default_loop();
-
-    // Gauche
-    Scm_Init(GAUCHE_SIGNATURE);
-
-    if (argc < 1) {
-        Scm_Printf(SCM_CURERR, "usage: %s infile\n", argv[0]);
+void setup_signal_handlers()
+{
+    struct sigaction sa;
+    sa.sa_handler = SIG_IGN;
+    sa.sa_flags = 0;
+    if (sigaction(SIGPIPE, &sa, NULL) < 0) {
+        Scm_Printf(SCM_CURERR, "sigaction failed.");
         Scm_Exit(1);
     }
+}
 
-    ScmLoadPacket lpak;
-    Scm_AddLoadPath(LIBDIR, 0);
-    if (Scm_Load("violet", 0, &lpak) < 0) {
-        error_exit(lpak.exception);
-    }
-    ScmModule *violet_mod = SCM_FIND_MODULE("violet", 0);
-
-    Scm_AddLoadPath(".", 0);
-    const char *infile = argv[1];
-    if (Scm_Load(infile, 0, &lpak) < 0) {
-        error_exit(lpak.exception);
-    }
-
-
-    ScmObj init_proc = SCM_UNDEFINED;
-    ScmModule *mod = Scm_CurrentModule();
-
-    SCM_BIND_PROC(init_proc,             "violet-init",              violet_mod);
-    SCM_BIND_PROC(new_conn_proc,         "violet-on-new-connection", violet_mod);
-    SCM_BIND_PROC(read_proc,             "violet-on-read",           violet_mod);
-    SCM_BIND_PROC(write_done_proc,       "violet-on-write-done",     violet_mod);
-    SCM_BIND_PROC(dequeue_response_proc, "violet-dequeue-response!", violet_mod);
-
-    ScmEvalPacket epak;
-    if (Scm_Apply(init_proc, SCM_NIL, &epak) < 0) {
-        error_exit(epak.exception);
-    }
-
-    uv_timer_init(loop, &timeout);
-
+int start_main_loop()
+{
     // Main loop
     uv_idle_t idler;
 
@@ -223,13 +191,55 @@ int main(int argc, char **argv) {
     Scm_Printf(SCM_CURERR, "%s: starting server on port %d\n",
                __FUNCTION__, DEFAULT_PORT);
 
-    struct sigaction sa;
-    sa.sa_handler = SIG_IGN;
-    sa.sa_flags = 0;
-    if (sigaction(SIGPIPE, &sa, NULL) < 0) {
-        Scm_Printf(SCM_CURERR, "sigaction failed.");
+    return uv_run(loop, UV_RUN_DEFAULT);
+}
+
+void init_violet_module()
+{
+    ScmLoadPacket lpak;
+    Scm_AddLoadPath(LIBDIR, 0);
+    if (Scm_Load("violet", 0, &lpak) < 0) {
+        error_exit(lpak.exception);
+    }
+    ScmModule *violet_mod = SCM_FIND_MODULE("violet", 0);
+
+    SCM_BIND_PROC(init_proc,             "violet-init",              violet_mod);
+    SCM_BIND_PROC(new_conn_proc,         "violet-on-new-connection", violet_mod);
+    SCM_BIND_PROC(read_proc,             "violet-on-read",           violet_mod);
+    SCM_BIND_PROC(write_done_proc,       "violet-on-write-done",     violet_mod);
+    SCM_BIND_PROC(dequeue_response_proc, "violet-dequeue-response!", violet_mod);
+
+}
+
+int main(int argc, char **argv) {
+    loop = uv_default_loop();
+
+    // Gauche
+    Scm_Init(GAUCHE_SIGNATURE);
+
+    if (argc < 1) {
+        Scm_Printf(SCM_CURERR, "usage: %s infile\n", argv[0]);
         Scm_Exit(1);
     }
 
-    return uv_run(loop, UV_RUN_DEFAULT);
+    ScmLoadPacket lpak;
+
+    init_violet_module();
+
+    Scm_AddLoadPath(".", 0);
+    const char *infile = argv[1];
+    if (Scm_Load(infile, 0, &lpak) < 0) {
+        error_exit(lpak.exception);
+    }
+
+    ScmEvalPacket epak;
+    if (Scm_Apply(init_proc, SCM_NIL, &epak) < 0) {
+        error_exit(epak.exception);
+    }
+
+    uv_timer_init(loop, &timeout);
+
+    setup_signal_handlers();
+
+    return start_main_loop();
 }

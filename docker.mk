@@ -16,6 +16,9 @@ build-local:
 run-local: build-local
 	cd $(SCRIPT_DIR) && ../$(TARGET) $(SCRIPT)
 
+debug:
+	cd $(SCRIPT_DIR) && gdb ../$(TARGET)
+
 run-local-nodemon: build-local
 	cd $(SCRIPT_DIR) && nodemon -e scm --exec ../$(TARGET) $(SCRIPT)
 
