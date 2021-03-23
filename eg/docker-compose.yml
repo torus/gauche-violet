@@ -3,7 +3,7 @@ services:
   gosh:
     build: .
     volumes:
-      - .:/code
+      - ..:/code
     ports:
       - "2222:2222"
     expose:

@@ -64,4 +64,9 @@ uninstall:
 	rm -f $(LIBDIR)/violet.scm
 	rmdir -f $(LIBDIR)
 
+push-docker:
+	sudo docker pull practicalscheme/gauche:latest
+	sudo docker build -t torus/violet:latest .
+	sudo docker push torus/violet:latest
+
 .PHONY: all options distclean clean dist install uninstall
