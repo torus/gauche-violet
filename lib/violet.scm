@@ -130,11 +130,11 @@
 (define (await yield)
   (^[proc]
     (call/cc (lambda (cont)
-               (thread-start! 
+               (thread-start!
                 (make-thread
                  (^[]
-                   (let ((result 
-                          (guard (exc [else (x->string exc)])
+                   (let ((result
+                          (guard (exc [else exc])
                                  (proc))))
                      (enqueue-task! (^[] (cont result)))))))
                (yield)))))
