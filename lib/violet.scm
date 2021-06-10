@@ -134,9 +134,11 @@
                 (make-thread
                  (^[]
                    (let ((result
-                          (guard (exc [else exc])
-                                 (proc))))
-                     (enqueue-task! (^[] (cont result)))))))
+                          (guard (exc [else (cons exc #f)])
+                                 (cons #f (proc)))))
+                     (enqueue-task! (^[] (if (car result)
+                                             (raise (car result))
+                                             (cont (cdr result)))))))))
                (yield)))))
 
 (define (violet-async func)
