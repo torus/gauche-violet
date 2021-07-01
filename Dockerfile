@@ -7,7 +7,7 @@ WORKDIR /work
 RUN curl -L -O https://github.com/torus/gauche-rheingau/releases/download/v0.1.0/gauche-rheingau-0.1.0.tgz
 RUN gauche-package install gauche-rheingau-*.tgz
 
-RUN curl -L -O https://github.com/torus/gauche-violet/archive/v0.2.0.tar.gz
+RUN curl -L -O https://github.com/torus/gauche-violet/archive/v0.3.0.tar.gz
 RUN pwd && ls && tar xvfz v*.tar.gz
 
 WORKDIR /code

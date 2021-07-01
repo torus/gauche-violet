@@ -37,8 +37,7 @@ distclean: clean
 
 dist: distclean
 	mkdir -p violet-$(VERSION)
-	cp -R Dockerfile Makefile README.md barrel.scm config.mk	\
-	    docker-compose.yml docker.mk eg lib static violet.1		\
+	cp -R Dockerfile Makefile README.md config.mk eg lib violet.1 \
 	    $(SRC) violet-$(VERSION)
 	tar -cf violet-$(VERSION).tar violet-$(VERSION)
 	gzip violet-$(VERSION).tar
