@@ -52,7 +52,7 @@
   (push-task! `(close ,(slot-ref vsock 'client))))
 
 (define (violet-on-write-done client)
-  (let ((vsock (hash-table-get *client-vsock-table* client)))
+  (let ((vsock (car (hash-table-get *client-vsock-table* client))))
         (dec-writes! vsock)
         (when (and (ref vsock 'closed?) (zero? (slot-ref vsock 'remaining-writes)))
           (hash-table-delete! *client-vsock-table* client)
@@ -60,27 +60,42 @@
 
 (define (make-output-port client)
   (define (respond-to-client str)
-        (inc-writes! (hash-table-get *client-vsock-table* client))
+        (inc-writes! (car (hash-table-get *client-vsock-table* client)))
     (push-task! `(res ,client ,str)))
   (define (close)
     ;; Do nothing here. The socket will be closed after all the tasks are done.
     )
   (make <virtual-output-port> :puts respond-to-client :close close))
 
-(define (add-vsock! client iport)
+(define (add-vsock! client)
+  (define iport-queue (make-queue))
+  (define (port-getb)
+    (if (queue-empty? iport-queue)
+        eof-object
+        (let ((port (queue-front iport-queue #f)))
+          (let ((c (read-byte port)))
+                (if (eof-object? c)
+                    (begin (dequeue! iport-queue)
+                           (port-getb))
+                    c)))
+        ))
+  (define iport (make <virtual-input-port> :getb port-getb))
+
   (let ((vsock (make <violet-socket>
-                                 :client client
-                                 :input-port iport
-                                 :output-port (make-output-port client))))
-        (hash-table-put! *client-vsock-table* client vsock)
-        vsock))
+                 :client client
+                 :input-port iport
+                 :output-port (make-output-port client))))
+    (hash-table-put! *client-vsock-table* client (list vsock iport-queue))
+    (list vsock iport-queue)))
 
 (define (violet-on-read client buf)
-  (let* ([iport (open-input-string buf)]
-         [vsock (or (hash-table-get *client-vsock-table* client #f)
-                                        (add-vsock! client iport))])
+  (let* ([vsock-and-queue
+          (or (hash-table-get *client-vsock-table* client #f)
+              (add-vsock! client))])
+    (enqueue! (cadr vsock-and-queue) (open-input-string buf))
     (enqueue-task! (lambda ()
-                     (with-module makiki (handle-client #f vsock))))
+                     (with-module makiki
+                       (handle-client #f (car vsock-and-queue)))))
     ))
 
 (define-class <violet-socket> (<connection>)
@@ -113,7 +128,7 @@
 
 (define-method connection-close ((vsock <violet-socket>))
   (if (ref vsock 'closed?)
-          (print #"double closing attempt: ~vsock")
+      (print #"double closing attempt: ~vsock")
       (set! (ref vsock 'closed?) #t)))
 
 (define-method connection-shutdown ((vsock <violet-socket>) param)
