@@ -37,7 +37,7 @@
           (flush))
         (loop))))))
 
-(define *response-queue* (make-queue))
+(define *response-queue* (make-mtqueue))
 
 (define (violet-dequeue-response!)
   (dequeue! *response-queue* #f)
@@ -53,10 +53,12 @@
 
 (define (violet-on-write-done client)
   (let ((vsock (car (hash-table-get *client-vsock-table* client))))
-        (dec-writes! vsock)
-        (when (and (ref vsock 'closed?) (zero? (slot-ref vsock 'remaining-writes)))
-          (hash-table-delete! *client-vsock-table* client)
-          (close-stream vsock))))
+    (enqueue-task!
+     (^[] (dec-writes! vsock)
+       (when (and (ref vsock 'closed?)
+                  (zero? (slot-ref vsock 'remaining-writes)))
+         (hash-table-delete! *client-vsock-table* client)
+         (close-stream vsock))))))
 
 (define (make-output-port client)
   (define (respond-to-client str)
@@ -68,7 +70,7 @@
   (make <virtual-output-port> :puts respond-to-client :close close))
 
 (define (add-vsock! client)
-  (define iport-queue (make-queue))
+  (define iport-queue (make-mtqueue))
   (define (port-getb)
     (if (queue-empty? iport-queue)
         eof-object
