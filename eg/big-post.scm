@@ -84,7 +84,7 @@
   )
 
 (define payload
-  (make-string 100000 #\x))
+  (make-string 1000000 #\x))
 
 (define-http-handler "/"
   (^[req app]
