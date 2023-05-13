@@ -1,5 +1,5 @@
 # Violet version
-VERSION = 0.3.2
+VERSION = 0.3.2-fix1
 
 # paths
 PREFIX = /usr/local
