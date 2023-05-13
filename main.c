@@ -207,7 +207,7 @@ void load_violet_module()
     SCM_BIND_PROC(read_proc,             "violet-on-read",           violet_mod);
     SCM_BIND_PROC(write_done_proc,       "violet-on-write-done",     violet_mod);
     SCM_BIND_PROC(dequeue_response_proc, "violet-dequeue-response!", violet_mod);
-
+    SCM_DEFINE(violet_mod, "*violet-version*", SCM_MAKE_STR(VERSION));
 }
 
 void load_script(int argc, char **argv) {

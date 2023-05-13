@@ -26,7 +26,7 @@
   (enqueue! *task-queue* proc))
 
 (define (violet-init)
-  (print "Starting worker thread.")
+  (print #"Initializing Violet ~|*violet-version*|...")
   (thread-start!
    (make-thread
     (lambda ()
