@@ -62,25 +62,30 @@
 
 (define (make-output-port client)
   (define (respond-to-client str)
-        (inc-writes! (car (hash-table-get *client-vsock-table* client)))
-    (push-task! `(res ,client ,str)))
+    (let ((vsock-and-queue (hash-table-get *client-vsock-table* client #f)))
+      ;; do nothing if the client was already disconnected.
+      (when vsock-and-queue
+        (inc-writes! (car vsock-and-queue))
+        (push-task! `(res ,client ,str)))))
+
   (define (close)
     ;; Do nothing here. The socket will be closed after all the tasks are done.
     )
   (make <virtual-output-port> :puts respond-to-client :close close))
 
 (define (add-vsock! client)
+  (define buf-port #f)
   (define iport-queue (make-mtqueue))
   (define (port-getb)
     (if (queue-empty? iport-queue)
-        eof-object
+        #?=eof-object
         (let ((port (queue-front iport-queue #f)))
           (let ((c (read-byte port)))
                 (if (eof-object? c)
                     (begin (dequeue! iport-queue)
                            (port-getb))
-                    c)))
-        ))
+                    c)))))
+
   (define iport (make <virtual-input-port> :getb port-getb))
 
   (let ((vsock (make <violet-socket>
@@ -95,9 +100,13 @@
           (or (hash-table-get *client-vsock-table* client #f)
               (add-vsock! client))])
     (enqueue! (cadr vsock-and-queue) (open-input-string buf))
-    (enqueue-task! (lambda ()
-                     (with-module makiki
-                       (handle-client #f (car vsock-and-queue)))))
+    (let ((len (queue-length (cadr vsock-and-queue))))
+      (enqueue-task!
+       (lambda ()
+         ;; Don't handle the input if the queue is still growing.
+         (if (= len (queue-length (cadr vsock-and-queue)))
+             (with-module makiki
+                          (handle-client #f (car vsock-and-queue)))))))
     ))
 
 (define-class <violet-socket> (<connection>)
