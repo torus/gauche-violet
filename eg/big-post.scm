@@ -86,26 +86,37 @@
 (define payload
   (make-string 1000000 #\x))
 
-(define-http-handler "/"
+(define (handle-request/no-auth proc)
   (^[req app]
-    #?=(request-uri req)
-    (guard (e [else (report-error e)])
-       (respond/ok req (cons "<!DOCTYPE html>"
-                             (sxml:sxml->html
-                              (create-page
-                               '(h1 "Form")
-                               `(form (@ (name "form")
-                                         (method "post")
-                                         (action "/post"))
-                                      (input (@ (type "submit")))
-                                      (textarea (@ (name "posttext")) ,payload))
-                               )))))))
+    (violet-async
+     (^[await]
+       (guard (e [else (report-error e)
+                       (respond/ng req 500 :body (create-error-page e))])
+              (proc await req app))))))
+
+(define-http-handler "/"
+  (handle-request/no-auth
+   (^[await req app]
+     #?=(request-uri req)
+     (guard (e [else (report-error e)])
+	    (respond/ok req (cons "<!DOCTYPE html>"
+				  (sxml:sxml->html
+				   (create-page
+				    '(h1 "Form")
+				    `(form (@ (name "form")
+                                              (method "post")
+                                              (action "/post"))
+					   (input (@ (type "submit")))
+					   (textarea (@ (name "posttext")) ,payload))
+				    ))))))))
+
+(define (handle-request/post proc)
+  (with-post-parameters
+   (handle-request/no-auth proc)))
 
 (define-http-handler (list POST) "/post"
-  (guard (e [else (report-error e)])
-         (with-post-parameters
-          (^[req app]
-            #?=(request-uri req)
-            #?=(string-length (request-param-ref req "posttext"))
-            (respond/redirect req "/"))
-          )))
+  (handle-request/post
+   (^[await req app]
+      #?=(request-uri req)
+      #?=(string-length (request-param-ref req "posttext"))
+      (respond/redirect req "/"))))
