@@ -31,11 +31,11 @@
    (make-thread
     (lambda ()
       (let loop ()
-        (let ((task (dequeue/wait! *task-queue*)))
-          (guard (exc [else (report-error exc)])
-                 (task))             ; task may return multiple times!
-          (flush))
-        (loop))))))
+         (let ((task (dequeue/wait! *task-queue*)))
+           (guard (exc [else (report-error exc)])
+                  (task))             ; task may return multiple times!
+           (flush))
+         (loop))))))
 
 (define *response-queue* (make-mtqueue))
 
@@ -62,10 +62,10 @@
 
 (define (make-output-port client)
   (define (respond-to-client str)
-    (let ((vsock-and-queue (hash-table-get *client-vsock-table* client #f)))
+    (let ((vsock-and-proc (hash-table-get *client-vsock-table* client #f)))
       ;; do nothing if the client was already disconnected.
-      (when vsock-and-queue
-        (inc-writes! (car vsock-and-queue))
+      (when vsock-and-proc
+        (inc-writes! (car vsock-and-proc))
         (push-task! `(res ,client ,str)))))
 
   (define (close)
@@ -73,41 +73,64 @@
     )
   (make <virtual-output-port> :puts respond-to-client :close close))
 
-(define (add-vsock! client)
+(define (add-vsock! client buf)
+  (define cont #f)
+  (define cont2 #f)
   (define buf-port #f)
   (define iport-queue (make-mtqueue))
+  (define count 0)
+
+  #;(define debug-printing? #f)
+
   (define (port-getb)
     (if (queue-empty? iport-queue)
-        #?=eof-object
+        ;; #?=eof-object
+        (call/cc (^c
+                  (set! cont2 c)
+                  ;;#?=count
+                  (cont)))
         (let ((port (queue-front iport-queue #f)))
           (let ((c (read-byte port)))
                 (if (eof-object? c)
                     (begin (dequeue! iport-queue)
+                           #;(set! debug-printing? #t)
                            (port-getb))
-                    c)))))
+                    (begin
+                      (inc! count)
+                      #;(when debug-printing? (print #"count: ~count"))
+                      c))))))
 
   (define iport (make <virtual-input-port> :getb port-getb))
 
   (let ((vsock (make <violet-socket>
                  :client client
                  :input-port iport
-                 :output-port (make-output-port client))))
-    (hash-table-put! *client-vsock-table* client (list vsock iport-queue))
-    (list vsock iport-queue)))
+                 :output-port (make-output-port client)))
+        (input-proc (^[buf]
+                      ;;#?='input-proc
+                      (enqueue! iport-queue (open-input-string buf))
+                      (enqueue-task! (^[] (when cont2
+                                            (let ((c cont2))
+                                              (set! cont2 #f)
+                                              (c (port-getb)))))))))
+    (hash-table-put! *client-vsock-table* client (list vsock input-proc))
+    (input-proc buf)
+
+    (call/cc
+      (^c
+       (set! cont c)
+       (enqueue-task!
+        (^[]
+          (with-module makiki (handle-client #f vsock))))))))
 
 (define (violet-on-read client buf)
-  (let* ([vsock-and-queue
-          (or (hash-table-get *client-vsock-table* client #f)
-              (add-vsock! client))])
-    (enqueue! (cadr vsock-and-queue) (open-input-string buf))
-    (let ((len (queue-length (cadr vsock-and-queue))))
-      (enqueue-task!
-       (lambda ()
-         ;; Don't handle the input if the queue is still growing.
-         (if (= len (queue-length (cadr vsock-and-queue)))
-             (with-module makiki
-                          (handle-client #f (car vsock-and-queue)))))))
-    ))
+  (let ([bufcopy (string-copy buf)])
+    (enqueue-task!
+     (^[]
+  (let ([vsock-and-proc (hash-table-get *client-vsock-table* client #f)])
+    (if vsock-and-proc
+        ((cadr vsock-and-proc) bufcopy)
+        (add-vsock! client bufcopy)))))))
 
 (define-class <violet-socket> (<connection>)
   ((client :init-value #f :init-keyword :client)
