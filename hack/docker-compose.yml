@@ -1,0 +1,10 @@
+version: '3'
+services:
+  gosh:
+    build: .
+    volumes:
+      - ..:/code
+    ports:
+      - 2222:2222
+    stdin_open: true
+    tty: true

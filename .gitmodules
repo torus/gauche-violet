@@ -1,0 +1,3 @@
+[submodule "hack/gauche"]
+	path = hack/gauche
+	url = https://github.com/shirok/Gauche.git

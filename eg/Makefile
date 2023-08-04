@@ -3,6 +3,9 @@ SCRIPT = random.scm
 
 TARGET = violet
 
+test:
+	LD_LIBRARY_PATH=../hack/local/lib ../violet big-post.scm
+
 run:
 	$(TARGET) $(SCRIPT)
 
