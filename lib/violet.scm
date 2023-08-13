@@ -7,6 +7,7 @@
   (use gauche.net)
   (use gauche.threads)
   (use gauche.connection)
+  (use control.plumbing)
 
   (use makiki)
 
@@ -74,54 +75,24 @@
   (make <virtual-output-port> :puts respond-to-client :close close))
 
 (define (add-vsock! client buf)
-  (define cont #f)
-  (define cont2 #f)
-  (define buf-port #f)
-  (define iport-queue (make-mtqueue))
-  (define count 0)
+  (let-values (((inlets outlets) (make-pipe)))
+    (let* ((vsock (make <violet-socket>
+                    :client client
+                    :input-port (car outlets)
+                    :output-port (make-output-port client)))
+           (input-proc (^[buf]
+                         (guard (exc [else (report-error exc)])
+                                (display buf (car inlets))
+                                (flush (car inlets))))))
+      (hash-table-put! *client-vsock-table*
+                       client (list vsock input-proc))
+      (input-proc buf)
 
-  #;(define debug-printing? #f)
-
-  (define (port-getb)
-    (if (queue-empty? iport-queue)
-        ;; #?=eof-object
-        (call/cc (^c
-                  (set! cont2 c)
-                  ;;#?=count
-                  (cont)))
-        (let ((port (queue-front iport-queue #f)))
-          (let ((c (read-byte port)))
-                (if (eof-object? c)
-                    (begin (dequeue! iport-queue)
-                           #;(set! debug-printing? #t)
-                           (port-getb))
-                    (begin
-                      (inc! count)
-                      #;(when debug-printing? (print #"count: ~count"))
-                      c))))))
-
-  (define iport (make <virtual-input-port> :getb port-getb))
-
-  (let ((vsock (make <violet-socket>
-                 :client client
-                 :input-port iport
-                 :output-port (make-output-port client)))
-        (input-proc (^[buf]
-                      ;;#?='input-proc
-                      (enqueue! iport-queue (open-input-string buf))
-                      (enqueue-task! (^[] (when cont2
-                                            (let ((c cont2))
-                                              (set! cont2 #f)
-                                              (c (port-getb)))))))))
-    (hash-table-put! *client-vsock-table* client (list vsock input-proc))
-    (input-proc buf)
-
-    (call/cc
-      (^c
-       (set! cont c)
-       (enqueue-task!
+      (thread-start!
+       (make-thread
         (^[]
-          (with-module makiki (handle-client #f vsock))))))))
+          (guard (exc [else (report-error exc)])
+                 (with-module makiki (handle-client #f vsock)))))))))
 
 (define (violet-on-read client buf)
   (let ([bufcopy (string-copy buf)])
