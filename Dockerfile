@@ -7,10 +7,10 @@ WORKDIR /work
 RUN curl -L -O https://github.com/torus/gauche-rheingau/releases/download/v0.1.1/rheingau-0.1.1.tgz
 RUN gauche-package install rheingau-*.tgz
 
-RUN curl -L -O https://github.com/torus/gauche-violet/archive/v0.4.0.tar.gz
+RUN curl -L -O https://github.com/torus/gauche-violet/releases/download/v0.4.0/violet-0.4.0.tar.gz
 RUN pwd && ls && tar xvfz v*.tar.gz
 
 WORKDIR /code
-RUN make -C /work/gauche-violet-* install
+RUN make -C /work/violet-* install
 
 CMD bash
