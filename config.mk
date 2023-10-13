@@ -7,9 +7,9 @@ MANPREFIX = $(PREFIX)/share/man
 LIBPREFIX = $(PREFIX)/lib
 LIBDIR = $(LIBPREFIX)/violet
 
-GAUCHEINC = $(shell $(PREFIX)/bin/gauche-config -I)
-GAUCHELIB = $(shell $(PREFIX)/bin/gauche-config -l)
-GAUCHELIBDIR = $(shell $(PREFIX)/bin/gauche-config -L)
+GAUCHEINC = $(shell gauche-config -I)
+GAUCHELIB = $(shell gauche-config -l)
+GAUCHELIBDIR = $(shell gauche-config -L)
 UVINC = $(shell pkg-config --cflags libuv)
 UVLIB = $(shell pkg-config --libs libuv)
 
