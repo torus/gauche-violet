@@ -1,8 +1,8 @@
 # Violet version
-VERSION = 0.3.2-fix1
+VERSION = 0.4.0
 
 # paths
-PREFIX = $(PWD)/hack/local
+PREFIX = /usr/local
 MANPREFIX = $(PREFIX)/share/man
 LIBPREFIX = $(PREFIX)/lib
 LIBDIR = $(LIBPREFIX)/violet
